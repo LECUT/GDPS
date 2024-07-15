@@ -33,4 +33,7 @@ Fig. 2 Installation package list
 ## Step 3: Create a project in Pycharm and run GDPS.py. Fig. 3 displays the software interface.
 <img src="images/fig3.png" alt="KPL" style="zoom:50%;" /> 
 
-Fig. 3 GDPS main interface
+Fig. 3 GDPS main interface  
+
+# CONTACT AUTHOR
+E-mail: lglu66@163.com
