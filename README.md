@@ -16,10 +16,10 @@ an open source GNSS data pre-processing software
 (4) GDPS supports quality checking analysis of multi-GNSS data in terms of carrier-to-noise-density ratio, ionospheric delay rate, pseudorange/carrier phase multipath, pseudorange/carrier phase observation noise, data integrity/saturation rate, and single point positioning.
 
 # Requirements
-The executable program in the package is built by Pycharm 2019 and Python 3.7.0 with open-source, cross-platform compilation tools on Windows 10. Computer configuration requirements are as follows: 
-Operating systems: (Windows or Linux) 
-System type: 64 bit 
-Memory: at least 512MB 
+The executable program in the package is built by Pycharm 2019 and Python 3.7.0 with open-source, cross-platform compilation tools on Windows 10. Computer configuration requirements are as follows:  
+Operating systems: (Windows or Linux)  
+System type: 64 bit  
+Memory: at least 512MB  
 Software compilation needs to be run under an English path. If a Chinese path is used, some functional interfaces may experience a flashback phenomenon. 
 # Usage
 ## Step 1: Uncompress the GDPS.zip file, then get three folders (i.e. \data, \doc, and \src). "\src" represents the source code and its directory structure is shown in Fig. 1. 
