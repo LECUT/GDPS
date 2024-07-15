@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="content-type"/>
+<script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+<style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+<style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="./js/point_data.js"></script>
+<script src="./js/leaflet.js"></script>
+<script src="./js/jquery-1.12.4.min.js"></script>
+<script src="./js/bootstrap.bundle.min.js"></script>
+<script src="./js/leaflet.awesome-markers.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet"/>
+<link href="./js/5/bootstrap.min.css" rel="stylesheet"/>
+<link href="./js/3/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.3/leaflet.css"/>
+
+<meta content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<style>
+                #map_view{
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+<script src="./js/leaflet-measure.min.js"></script>
+<link href="https://cdn.jsdelivr.net/gh/ljagis/leaflet-measure@2.1.7/dist/leaflet-measure.min.css" rel="stylesheet"/>
+<script src="./js/L.Control.MousePosition.min.js"></script>
+<link href="https://cdn.jsdelivr.net/gh/ardhi/Leaflet.MousePosition/src/L.Control.MousePosition.min.css" rel="stylesheet"/>
+<script src="./js/leaflet.draw.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.2/leaflet.draw.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="folium-map" id="map_view"></div>
+</body>
+<script>
+            var points = window.data;
+
+            column_x=[];
+            column_y=[];
+            for (var i = 0; i < points.length; i++) {
+                column_x.push(points[i][0]);
+                column_y.push(points[i][1]);
+            }
+
+            sum_x = 0;
+            sum_y = 0;
+            for (var i = 0; i < column_x.length; i++) {
+                sum_x += column_x[i];
+                sum_y += column_y[i];
+            }
+
+            x_mean = sum_x / column_x.length;
+            y_mean = sum_y / column_y.length;
+
+            var map_view = L.map(
+                "map_view",
+                {
+                    center: [x_mean, y_mean],
+                    crs: L.CRS.EPSG3857,
+                    zoom: 8,
+                    zoomControl: true,
+                    preferCanvas: false,
+                }
+            );
+            L.control.scale().addTo(map_view);
+
+
+
+            var tile_layer_opnstreetmap = L.tileLayer(
+                "https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png",
+                {"attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            ).addTo(map_view);
+
+            var tile_layer_esri = L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                {"attribution": "Tiles \u0026copy; Esri \u0026mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            ).addTo(map_view);
+        
+
+            var poly_line = L.polyline(
+                points,
+                {"bubblingMouseEvents": true, "color": "blue", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "blue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_view);
+
+
+            var bounds = poly_line.getBounds();
+    
+            map_view.fitBounds(
+                bounds,
+                {}
+            );
+        
+    
+            var layer_control = {
+                base_layers : {
+                    "ArcgisOnlineMap" : tile_layer_esri,
+                    // "OSMEnglish" : tile_layer_opnstreetmap,
+                },
+                overlays :  {
+                },
+            };
+            L.control.layers(
+                layer_control.base_layers,
+                layer_control.overlays,
+                {"autoZIndex": true, "collapsed": true, "position": "topright"}
+            ).addTo(map_view);
+            tile_layer_opnstreetmap.remove();
+        
+    
+            var marker = L.marker(
+                [x_mean, y_mean],
+                {"zoomStart": 10}
+            ).addTo(map_view);
+        
+    
+        var popup = L.popup({"maxWidth": "100%"});
+
+        
+            
+                var html_ = $(`<div id="html_" style="width: 100.0%; height: 100.0%;">Point</div>`)[0];
+                popup.setContent(html_);
+            
+        
+
+        marker.bindPopup(popup)
+        ;
+    
+            marker.bindTooltip(
+                `<div>
+                     Point
+                 </div>`,
+                {"sticky": true}
+            );
+
+                var lat_lng_popup_ = L.popup();
+                function latLngPop(e) {
+                    lat_lng_popup_
+                        .setLatLng(e.latlng)
+                        .setContent("Latitude: " + e.latlng.lat.toFixed(4) +
+                                    "<br>Longitude: " + e.latlng.lng.toFixed(4))
+                        .openOn(map_view);
+                    }
+                map_view.on('click', latLngPop);
+            
+    
+            var measure_control_ = new L.Control.Measure(
+                {"position": "topright", "primaryAreaUnit": "sqmeters", "primaryLengthUnit": "meters", "secondaryAreaUnit": "acres", "secondaryLengthUnit": "miles"});
+            map_view.addControl(measure_control_);
+
+        
+    
+            var mouse_position_ = new L.Control.MousePosition(
+                {"emptyString": "Unavailable", "lngFirst": false, "numDigits": 5, "position": "bottomright", "prefix": "", "separator": " : "}
+            );
+            mouse_position_.options["latFormatter"] =
+                undefined;
+            mouse_position_.options["lngFormatter"] =
+                undefined;
+            map_view.addControl(mouse_position_);
+        
+    
+            var options = {
+              position: "topleft",
+              draw: {},
+              edit: {},
+            }
+            // FeatureGroup is to store editable layers.
+            var drawnItems = new L.featureGroup().addTo(
+                map_view
+            );
+            options.edit.featureGroup = drawnItems;
+            var draw_control_ = new L.Control.Draw(
+                options
+            ).addTo(map_view);
+            map_view.on(L.Draw.Event.CREATED, function(e) {
+                var layer = e.layer,
+                    type = e.layerType;
+                var coords = JSON.stringify(layer.toGeoJSON());
+                layer.on('click', function() {
+                    alert(coords);
+                    console.log(coords);
+                });
+                drawnItems.addLayer(layer);
+             });
+            map_view.on('draw:created', function(e) {
+                drawnItems.addLayer(e.layer);
+            });
+            
+        
+</script>
+</html>

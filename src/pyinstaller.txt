@@ -1,0 +1,2 @@
+pyinstaller -w -i /root/Desktop/GDPS/lib/icon/logo.ico GDPS.py (linux)
+pyinstaller -i ./lib/icon/logo.ico GDPS.py（window）

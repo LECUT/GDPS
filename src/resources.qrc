@@ -1,0 +1,43 @@
+<RCC>
+  <qresource prefix="icon">
+    <file>chart.ico</file>
+    <file>choose_file.ico</file>
+    <file>add.ico</file>
+    <file>delete_file.ico</file>
+    <file>view_file.ico</file>
+    <file>exit.ico</file>
+    <file>export.ico</file>
+    <file>logo.ico</file>
+    <file>hook.ico</file>
+    <file>magnifier.ico</file>
+    <file>minus.ico</file>
+    <file>plus.ico</file>
+    <file>recovery.ico</file>
+    <file>set.ico</file>
+    <file>save.ico</file>
+    <file>scatter.ico</file>
+    <file>start.ico</file>
+    <file>run.ico</file>
+    <file>stop.ico</file>
+    <file>stat_file.ico</file>
+    <file>sure.ico</file>
+    <file>cut.ico</file>
+    <file>data.ico</file>
+    <file>download.ico</file>
+    <file>extract.ico</file>
+    <file>merge.ico</file>
+    <file>coordinate.ico</file>
+    <file>time.ico</file>
+    <file>document.ico</file>
+    <file>about.ico</file>
+    <file>compress.ico</file>
+    <file>convert.ico</file>
+    <file>web.ico</file>
+    <file>OKsubmit.jpg</file>
+    <file>tips.png</file>
+  </qresource>
+    <qresource prefix="backgorund">
+    <file>background.png</file>
+    <file>aboutground.jpg</file>
+  </qresource>
+</RCC>
