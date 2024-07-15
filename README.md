@@ -35,5 +35,5 @@ Fig. 2 Installation package list
 
 Fig. 3 GDPS main interface  
 
-# CONTACT AUTHOR
+# Contact author
 E-mail: lglu66@163.com
