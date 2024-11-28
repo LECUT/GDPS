@@ -159,10 +159,10 @@ def arc_dtr_h(data, sta, epoch, cfg):
                 fn = ark[t, 1]
                 if J[j] > st and J[j] < fn:
                     if t == 0:
-                        ark = np.vstack(np.array([st, J[j]], [J[j]+1, fn]), ark[1:, :])
+                        ark = np.vstack((np.array([(st, J[j]), (J[j] + 1, fn)]), ark[1:, :]))
                         break
                     else:
-                        ark = np.vstack(ark[0:t-1, :], np.array([st, J[j]], [J[j]+1, fn]), ark[t+1:, :])
+                        ark = np.vstack((ark[0:t, :], np.array([(st, J[j]), (J[j]+1, fn)]), ark[t+1:, :]))
                         DSR = t + 1
                         break
         ark_ = ark.copy()
@@ -224,10 +224,7 @@ def arc_dtr_h1(data, sta, epoch, slip, cfg):
                         ark = np.vstack((np.array([(st, J[j]), (J[j]+1, fn)]), ark[1:, :]))
                         break
                     else:
-                        try:
-                            ark = np.vstack((ark[0:t, :], np.array([(st, J[j]), (J[j]+1, fn)]), ark[t+1:, :]))
-                        except Exception as e:
-                            print(e)
+                        ark = np.vstack((ark[0:t, :], np.array([(st, J[j]), (J[j]+1, fn)]), ark[t+1:, :]))
                         DSR = t + 1
                         break
         ark_ = ark.copy()
