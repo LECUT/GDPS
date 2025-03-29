@@ -96,6 +96,8 @@ class plot_sys(QMainWindow):
         zlable_h   = 25*self.ratio
         button_w   = 80*self.ratio
         button_h   = 25*self.ratio
+        checkbox_w = 45*self.ratio
+        checkbox_h = 25*self.ratio
         bobox_w    = 150*self.ratio
         bobox_h    = 25*self.ratio
         LineEdit_w = 350*self.ratio
@@ -107,7 +109,7 @@ class plot_sys(QMainWindow):
         self.File = self.bar.addMenu("File")
         # self.true_point = self.File.addAction("Set")
         # self.true_point.triggered.connect(self.true_gui)
-        self.save = self.File.addAction("Save")
+        self.save = self.File.addAction("Save Figure")
         self.save.triggered.connect(self.save_figure)
         self.Map = self.bar.addMenu("Mapview")
         self.point_map = self.Map.addAction("Pos2map")
@@ -217,10 +219,15 @@ class plot_sys(QMainWindow):
         self.draw_btn.setMinimumSize(QSize(button_w, button_h))
         self.draw_btn.clicked.connect(self.plot_fig)
 
+        self.grid_checkbox = QCheckBox('Grid', self)
+        self.grid_checkbox.setMinimumSize(QSize(checkbox_w, checkbox_h))
+        self.grid_checkbox.setChecked(True)
+        self.grid_checkbox.stateChanged.connect(self.choose_grid)
+
         sol_box.setSpacing(Pagemargin)
         sol_box.addWidget(self.sol_files_lable, 0, 0, 1, 1)
         sol_box.addWidget(self.sol_files_edit, 0, 1, 1, 5)
-        sol_box.addWidget(self.sol_files_btn, 0, 6, 1, 1)
+        sol_box.addWidget(self.sol_files_btn, 0, 6, 1, 2)
         sol_box.addWidget(self.figtype_label, 1, 0, 1, 1)
         sol_box.addWidget(self.figtype_combobox, 1, 1, 1, 2)
         sol_box.addWidget(self.sys_label, 1, 3, 1, 1)
@@ -229,6 +236,7 @@ class plot_sys(QMainWindow):
         sol_box.addWidget(self.dop_wg, 1, 5, 1, 1)
 
         sol_box.addWidget(self.draw_btn, 1, 6, 1, 1)
+        sol_box.addWidget(self.grid_checkbox, 1, 7, 1, 1)
         sol_box.setContentsMargins(Pagemargin, Pagemargin, Pagemargin, Pagemargin)
 
         # spacerItem4 = QSpacerItem(1, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
@@ -347,6 +355,33 @@ class plot_sys(QMainWindow):
                             QMessageBox.information(self, 'Tips', 'Success Save Figure')
                     else:
                         QMessageBox.information(self, 'Tips', 'Input Size Mode Error')
+
+    # --------------Grid select---------------------------------------------------------------------------------------------
+    def choose_grid(self):
+        """根据复选框的状态切换格网显示与否"""
+        if self.grid_checkbox.isChecked():
+            if hasattr(self, 'ax'):
+                self.ax.grid(True,linestyle='--')
+            elif hasattr(self, 'sky_'):
+                self.sky_.grid(True)
+            elif hasattr(self, 'ax_l'):
+                self.ax_l.grid(True, linestyle='--')
+            elif hasattr(self, 'x_'):
+                self.x_.grid(True, linestyle='--')
+                self.y_.grid(True, linestyle='--')
+                self.z_.grid(True, linestyle='--')
+        else:
+            if hasattr(self, 'ax'):
+                self.ax.grid(False)
+            elif hasattr(self, 'sky_'):
+                self.sky_.grid(False)
+            elif hasattr(self, 'ax_l'):
+                self.ax_l.grid(False)
+            elif hasattr(self, 'x_'):
+                self.x_.grid(False)
+                self.y_.grid(False)
+                self.z_.grid(False)
+        self.figure.draw()
 
 
     # --------------File select---------------------------------------------------------------------------------------------
@@ -628,18 +663,18 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     colors = ['r', 'b', 'green', 'm', 'orange', 'c', 'deeppink']
-                    bars = ax.bar(sys_name, data_sys, color=colors, width=0.3)
+                    bars = self.ax.bar(sys_name, data_sys, color=colors, width=0.3)
 
                     plt.xticks(rotation=0)
                     font = {'family': 'Times New Roman',
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(r"Mean Elevation (°)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(r"Average of Elevation (°)", font)
+                    self.ax.grid(linestyle='--')
 
                     self.figure.draw()
 
@@ -661,18 +696,18 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     colors = ['r', 'b', 'green', 'm', 'orange', 'c', 'deeppink']
-                    bars = ax.bar(sys_name, data_sys, color=colors, width=0.3)
+                    bars = self.ax.bar(sys_name, data_sys, color=colors, width=0.3)
 
                     plt.xticks(rotation=0)
                     font = {'family': 'Times New Roman',
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(r"Mean Azimuth (°)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(r"Average of Azimuth (°)", font)
+                    self.ax.grid(linestyle='--')
 
                     self.figure.draw()
 
@@ -694,7 +729,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     colors = ['r', 'r', 'r', 'b', 'b', 'b', 'green', 'green', 'green', 'green', 'green', 'green','green',
                               'm', 'm', 'm', 'm', 'm', 'orange', 'orange', 'orange', 'orange', 'c',
@@ -708,7 +743,7 @@ class plot_sys(QMainWindow):
                         y.append(data_sys[i])
                         c.append(colors[i])
 
-                    bars = ax.bar(x, y, color=c, width=0.5)
+                    bars = self.ax.bar(x, y, color=c, width=0.5)
                     # for i, bar in enumerate(bars):
                     #     bar.set_label(labels[i])
 
@@ -717,8 +752,8 @@ class plot_sys(QMainWindow):
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(r"Mean Carrier to Noise Ratio (dB-Hz)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(r"Average of Carrier to Noise Ratio (dB-Hz)", font)
+                    self.ax.grid(linestyle='--')
                     self.figure.draw()
 
                 # mp
@@ -739,7 +774,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     colors = ['r', 'r', 'r', 'b', 'b', 'b', 'green', 'green', 'green', 'green', 'green', 'green', 'green',
                               'm', 'm', 'm', 'm', 'm', 'orange', 'orange', 'orange', 'orange', 'c',
@@ -753,7 +788,7 @@ class plot_sys(QMainWindow):
                         y.append(data_sys[i])
                         c.append(colors[i])
 
-                    bars = ax.bar(x, y, color=c, width=0.5)
+                    bars = self.ax.bar(x, y, color=c, width=0.5)
                     # for i, bar in enumerate(bars):
                     #     bar.set_label(labels[i])
 
@@ -762,8 +797,8 @@ class plot_sys(QMainWindow):
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(r"Code Multipath RMS (m)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(r"Code Multipath RMS (m)", font)
+                    self.ax.grid(linestyle='--')
                     self.figure.draw()
 
 
@@ -793,15 +828,15 @@ class plot_sys(QMainWindow):
                         y.append(data_sys[i])
                         c.append(colors[i])
 
-                    bars = ax.bar(x, y, color=c, width=0.3)
+                    bars = self.ax.bar(x, y, color=c, width=0.3)
 
                     plt.xticks(rotation=0)
                     font = {'family': 'Times New Roman',
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(u"Phase Multipath RMS (cm)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(u"Phase Multipath RMS (cm)", font)
+                    self.ax.grid(linestyle='--')
 
                     self.figure.draw()
 
@@ -825,7 +860,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     colors = ['r', 'r', 'r', 'b', 'b', 'b', 'green', 'green', 'green', 'green', 'green', 'green', 'green',
                               'm', 'm', 'm', 'm', 'm', 'orange', 'orange', 'orange', 'orange', 'c',
@@ -839,7 +874,7 @@ class plot_sys(QMainWindow):
                         y.append(data_sys[i])
                         c.append(colors[i])
 
-                    bars = ax.bar(x, y, color=c, width=0.5)
+                    bars = self.ax.bar(x, y, color=c, width=0.5)
                     # for i, bar in enumerate(bars):
                     #     bar.set_label(labels[i])
 
@@ -848,8 +883,8 @@ class plot_sys(QMainWindow):
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(u"Ionospheric Delay Rate RMS (m/s)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(u"Ionospheric Delay Rate RMS (m/s)", font)
+                    self.ax.grid(linestyle='--')
                     self.figure.draw()
 
 
@@ -873,7 +908,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     colors = ['r', 'r', 'r', 'b', 'b', 'b', 'green', 'green', 'green', 'green', 'green', 'green', 'green',
                               'm', 'm', 'm', 'm', 'm', 'orange', 'orange', 'orange', 'orange', 'c',
@@ -887,7 +922,7 @@ class plot_sys(QMainWindow):
                         y.append(data_sys[i])
                         c.append(colors[i])
 
-                    bars = ax.bar(x, y, color=c, width=0.5)
+                    bars = self.ax.bar(x, y, color=c, width=0.5)
                     # for i, bar in enumerate(bars):
                     #     bar.set_label(labels[i])
 
@@ -896,8 +931,8 @@ class plot_sys(QMainWindow):
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(u"Data Integrity Rate (%)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(u"Data Integrity Rate (%)", font)
+                    self.ax.grid(linestyle='--')
                     self.figure.draw()
 
 
@@ -920,7 +955,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     colors = ['r', 'r', 'r', 'b', 'b', 'b', 'green', 'green', 'green', 'green', 'green', 'green', 'green',
                               'm', 'm', 'm', 'm', 'm', 'orange', 'orange', 'orange', 'orange', 'c',
@@ -934,7 +969,7 @@ class plot_sys(QMainWindow):
                         y.append(data_sys[i])
                         c.append(colors[i])
 
-                    bars = ax.bar(x, y, color=c, width=0.5)
+                    bars = self.ax.bar(x, y, color=c, width=0.5)
                     # for i, bar in enumerate(bars):
                     #     bar.set_label(labels[i])
 
@@ -943,8 +978,8 @@ class plot_sys(QMainWindow):
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(u"Data Saturation Rate (%)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(u"Data Saturation Rate (%)", font)
+                    self.ax.grid(linestyle='--')
                     self.figure.draw()
 
 
@@ -964,7 +999,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     colors = ['r', 'r', 'r', 'b', 'b', 'b', 'green', 'green', 'green', 'green', 'green', 'green', 'green',
                               'm', 'm', 'm', 'm', 'm', 'orange', 'orange', 'orange', 'orange', 'c',
@@ -978,7 +1013,7 @@ class plot_sys(QMainWindow):
                         y.append(data_sys[i])
                         c.append(colors[i])
 
-                    bars = ax.bar(x, y, color=c, width=0.5)
+                    bars = self.ax.bar(x, y, color=c, width=0.5)
                     # for i, bar in enumerate(bars):
                     #     bar.set_label(labels[i])
 
@@ -987,8 +1022,8 @@ class plot_sys(QMainWindow):
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(u"Code Noise RMS (m)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(u"Code Noise RMS (m)", font)
+                    self.ax.grid(linestyle='--')
 
                     self.figure.draw()
 
@@ -1011,7 +1046,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     colors = ['r', 'r', 'r', 'b', 'b', 'b', 'green', 'green', 'green', 'green', 'green', 'green', 'green',
                               'm', 'm', 'm', 'm', 'm', 'orange', 'orange', 'orange', 'orange', 'c',
@@ -1025,7 +1060,7 @@ class plot_sys(QMainWindow):
                         y.append(data_sys[i])
                         c.append(colors[i])
 
-                    bars = ax.bar(x, y, color=c, width=0.5)
+                    bars = self.ax.bar(x, y, color=c, width=0.5)
                     # for i, bar in enumerate(bars):
                     #     bar.set_label(labels[i])
 
@@ -1034,8 +1069,8 @@ class plot_sys(QMainWindow):
                             'size': 16,
                             'weight': 'bold',
                             }
-                    ax.set_ylabel(u"Phase Noise RMS (Cycle)", font)
-                    ax.grid(linestyle='--')
+                    self.ax.set_ylabel(u"Phase Noise RMS (Cycle)", font)
+                    self.ax.grid(linestyle='--')
                     self.figure.draw()
 
 
@@ -1048,16 +1083,16 @@ class plot_sys(QMainWindow):
                     sys_colors = dict(zip(['G', 'R', 'C', 'E', 'J', 'I', 'S'], ['r', 'b', 'green', 'm', 'orange', 'c', 'deeppink']))
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    sky_ = fig.add_subplot(111, polar=True)
-                    sky_.set_theta_direction(-1)
-                    sky_.set_theta_zero_location('N')
-                    sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
-                    sky_.yaxis.set_label_position('right')
-                    sky_.grid(True)
+                    self.sky_ = fig.add_subplot(111, polar=True)
+                    self.sky_.set_theta_direction(-1)
+                    self.sky_.set_theta_zero_location('N')
+                    self.sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
+                    self.sky_.yaxis.set_label_position('right')
+                    self.sky_.grid(True)
                     prn_ = self.prn_sys[sys_type]
                     if len(prn_)>0:
                         for sat_ in self.prn_id_:
-                            sky_.scatter(azi_data[sat_]*np.pi/180, ele_data[sat_], s=14, marker='o', color=sys_colors[sat_[0]])
+                            self.sky_.scatter(azi_data[sat_]*np.pi/180, ele_data[sat_], s=14, marker='o', color=sys_colors[sat_[0]])
 
                     GPS_patch = mpatches.Patch(color='r', label='GPS')
                     GLO_patch = mpatches.Patch(color='b', label='GLO')
@@ -1071,7 +1106,7 @@ class plot_sys(QMainWindow):
                                bbox_to_anchor=(1.1, 0.5), loc='center left', ncol=1, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
 
                     plt.gca().invert_yaxis()
-                    sky_.set_ylim([90, 0])
+                    self.sky_.set_ylim([90, 0])
                     self.figure.draw()
 
 
@@ -1081,15 +1116,15 @@ class plot_sys(QMainWindow):
                     from matplotlib.pyplot import MultipleLocator
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     time = self.sol_data['ele']['Epoch']
                     prn_ = self.prn_sys[sys_type]
                     track_data = np.array(self.sol_data['ele'][prn_].astype(np.float64))
                     track_data[~np.isnan(track_data)] = 1
                     sys_colors = dict(zip(['G', 'R', 'C', 'E', 'J', 'I', 'S'], ['r', 'b', 'green', 'm', 'orange', 'c', 'deeppink']))
                     for i, sat_ in enumerate(prn_):
-                        ax.scatter(time, track_data[:, i]+i, s=20, marker='s', color=sys_colors[sat_[0]])
-                    ax.grid(linestyle='--')
+                        self.ax.scatter(time, track_data[:, i]+i, s=20, marker='s', color=sys_colors[sat_[0]])
+                    self.ax.grid(linestyle='--')
                     font = {'family': 'Times New Roman',
                             'size': 16,
                             'weight': 'bold',
@@ -1098,19 +1133,19 @@ class plot_sys(QMainWindow):
                             'size': 16,
                             'weight': 'bold',
                              }
-                    ax.set_ylim(0.5, len(prn_)+0.5)
+                    self.ax.set_ylim(0.5, len(prn_)+0.5)
                     # self.figure13.ax13.set_yticks(self.prn_id, minor=True)
 
-                    ax.yaxis.set_minor_locator(MultipleLocator(1))
-                    ax.set_yticks(np.arange(len(prn_))+1)
-                    ax.set_yticklabels(prn_, fontdict=font1)
+                    self.ax.yaxis.set_minor_locator(MultipleLocator(1))
+                    self.ax.set_yticks(np.arange(len(prn_))+1)
+                    self.ax.set_yticklabels(prn_, fontdict=font1)
 
-                    ax.set_xlabel(u"GPST (HH:MM)", font)
-                    ax.set_ylabel(u"Satellite Visibility", font)
+                    self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                    self.ax.set_ylabel(u"Satellite Visibility", font)
 
-                    ax.set_xlim(time.iloc[0], time.iloc[-1])
+                    self.ax.set_xlim(time.iloc[0], time.iloc[-1])
                     xfmt = mdate.DateFormatter('%H:%M')
-                    ax.xaxis.set_major_formatter(xfmt)
+                    self.ax.xaxis.set_major_formatter(xfmt)
 
                     self.figure.draw()
 
@@ -1128,36 +1163,36 @@ class plot_sys(QMainWindow):
                     data_ = {}
 
                     if self.dop_check['All'].isChecked():
-                        ax_l = plt.subplot(111)
-                        ax_r = ax_l.twinx()
+                        self.ax_l = plt.subplot(111)
+                        ax_r = self.ax_l.twinx()
                         if sys_type in row_name:
                             sys_ = sys_type
                             data_[sys_] = pos_data[sys_:sys_]
                             ax_r.scatter(data_[sys_]['Epoch'], data_[sys_]['NS'], s=25, marker='o', color=colors_dop['NS'], label='NS')
-                            ax_l.plot(data_[sys_]['Epoch'], data_[sys_]['GDOP'], '-o', markersize=5, color=colors_dop['GDOP'], label='GDOP')
-                            ax_l.plot(data_[sys_]['Epoch'], data_[sys_]['PDOP'], '-o', markersize=5, color=colors_dop['PDOP'], label='PDOP')
-                            ax_l.plot(data_[sys_]['Epoch'], data_[sys_]['HDOP'], '-o', markersize=5,  color=colors_dop['HDOP'], label='HDOP')
-                            ax_l.plot(data_[sys_]['Epoch'], data_[sys_]['VDOP'], '-o', markersize=5,  color=colors_dop['VDOP'], label='VDOP')
+                            self.ax_l.plot(data_[sys_]['Epoch'], data_[sys_]['GDOP'], '-o', markersize=5, color=colors_dop['GDOP'], label='GDOP')
+                            self.ax_l.plot(data_[sys_]['Epoch'], data_[sys_]['PDOP'], '-o', markersize=5, color=colors_dop['PDOP'], label='PDOP')
+                            self.ax_l.plot(data_[sys_]['Epoch'], data_[sys_]['HDOP'], '-o', markersize=5,  color=colors_dop['HDOP'], label='HDOP')
+                            self.ax_l.plot(data_[sys_]['Epoch'], data_[sys_]['VDOP'], '-o', markersize=5,  color=colors_dop['VDOP'], label='VDOP')
 
-                        lines_l, labels_l = ax_l.get_legend_handles_labels()
+                        lines_l, labels_l = self.ax_l.get_legend_handles_labels()
                         lines_r, labels_r = ax_r.get_legend_handles_labels()
                         lines = lines_l + lines_r
                         labels = labels_l + labels_r
-                        ax_l.legend(lines, labels, bbox_to_anchor=(1, 1.1), loc='upper right',
+                        self.ax_l.legend(lines, labels, bbox_to_anchor=(1, 1.1), loc='upper right',
                                     ncol=5, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01, markerscale=2, frameon=True)
 
-                        ax_l.grid(linestyle='--')
+                        self.ax_l.grid(linestyle='--')
                         font = {'family': 'Times New Roman',
                                 'size': 16,
                                 'weight': 'bold',
                                  }
                         ax_r.set_ylabel(u"Number of Satellites", font)
-                        ax_l.set_ylabel(u"Dilution of Precision", font)
-                        ax_l.set_ylim([0, 5])
+                        self.ax_l.set_ylabel(u"Dilution of Precision", font)
+                        self.ax_l.set_ylim([0, 5])
                         # plt.axis('auto')
                         xfmt = mdate.DateFormatter('%H:%M')
-                        ax_l.xaxis.set_major_formatter(xfmt)
-                        ax_l.set_xlabel(u"GPST (HH:MM)", font)
+                        self.ax_l.xaxis.set_major_formatter(xfmt)
+                        self.ax_l.set_xlabel(u"GPST (HH:MM)", font)
 
                     else:
                         # get plot type
@@ -1172,10 +1207,10 @@ class plot_sys(QMainWindow):
                                 'size': 16,
                                 'weight': 'bold',}
 
-                        ax_l = plt.subplot(111)
+                        self.ax_l = plt.subplot(111)
                         # if ax_r burn on
                         if len(dop_type) > 1 and 'NS' in dop_type:
-                            ax_r = ax_l.twinx()
+                            ax_r = self.ax_l.twinx()
                             ax_r_bool = True
                         else:
                             ax_r_bool = False
@@ -1187,37 +1222,37 @@ class plot_sys(QMainWindow):
                             for i, dop_ in enumerate(dop_type):
                                 if len(dop_type)>1:
                                     if dop_ != 'NS':
-                                        ax_l.plot(data_[sys_]['Epoch'], data_[sys_][dop_], '-o', markersize=5, color=colors_dop[dop_], label=dop_)
+                                        self.ax_l.plot(data_[sys_]['Epoch'], data_[sys_][dop_], '-o', markersize=5, color=colors_dop[dop_], label=dop_)
                                 else:
-                                    ax_l.plot(data_[sys_]['Epoch'], data_[sys_][dop_], '-o', markersize=5, color=colors_dop[dop_], label=dop_)
+                                    self.ax_l.plot(data_[sys_]['Epoch'], data_[sys_][dop_], '-o', markersize=5, color=colors_dop[dop_], label=dop_)
 
                                 if ax_r_bool and dop_ == 'NS':
                                     ax_r.plot(data_[sys_]['Epoch'], data_[sys_][dop_], '-o', markersize=5, color=colors_dop[dop_], label=dop_)
 
-                                lines_l, labels_l = ax_l.get_legend_handles_labels()
+                                lines_l, labels_l = self.ax_l.get_legend_handles_labels()
                                 if ax_r_bool:
                                     lines_r, labels_r = ax_r.get_legend_handles_labels()
                                 else:
                                     lines_r, labels_r = [], []
                                 lines = lines_l + lines_r
                                 labels = labels_l + labels_r
-                                ax_l.legend(lines, labels, bbox_to_anchor=(1, 1.1), loc='upper right',
+                                self.ax_l.legend(lines, labels, bbox_to_anchor=(1, 1.1), loc='upper right',
                                             ncol=5, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01, markerscale=2, frameon=True)
 
                                 if dop_ == 'NS':
-                                    ax_l.set_ylabel(u"Number of Satellites", font)
+                                    self.ax_l.set_ylabel(u"Number of Satellites", font)
                                 else:
-                                    ax_l.set_ylabel(u"Dilution of Precision", font)
-                                    ax_l.set_ylim([0, 5])
+                                    self.ax_l.set_ylabel(u"Dilution of Precision", font)
+                                    self.ax_l.set_ylim([0, 5])
 
                                 xfmt = mdate.DateFormatter('%H:%M')
-                                ax_l.xaxis.set_major_formatter(xfmt)
-                                ax_l.set_xlabel(u"GPST (HH:MM)", font)
+                                self.ax_l.xaxis.set_major_formatter(xfmt)
+                                self.ax_l.set_xlabel(u"GPST (HH:MM)", font)
 
                                 if ax_r_bool:
                                     ax_r.set_ylabel(u"Number of Satellites", font)
 
-                            ax_l.grid(linestyle='--')
+                            self.ax_l.grid(linestyle='--')
 
                     self.figure.draw()
 
@@ -1237,9 +1272,9 @@ class plot_sys(QMainWindow):
                     fig = self.figure.fig
 
                     if sys_type != 'All':
-                        x_ = fig.add_subplot(311)
-                        y_ = fig.add_subplot(312)
-                        z_ = fig.add_subplot(313)
+                        self.x_ = fig.add_subplot(311)
+                        self.y_ = fig.add_subplot(312)
+                        self.z_ = fig.add_subplot(313)
 
                         if sys_type in row_name:
                             sys_ = sys_type
@@ -1253,36 +1288,36 @@ class plot_sys(QMainWindow):
                                 if used_flag[i] > 0:
                                     dXYZ[i, :] = XYZ[i] - XYZ_mean
 
-                            x_.scatter(data_[sys_]['Epoch'], dXYZ[:, 0], s=25, marker='o', color=colors[0])
-                            y_.scatter(data_[sys_]['Epoch'], dXYZ[:, 1], s=25, marker='o', color=colors[1])
-                            z_.scatter(data_[sys_]['Epoch'], dXYZ[:, 2], s=25, marker='o', color=colors[2])
+                            self.x_.scatter(data_[sys_]['Epoch'], dXYZ[:, 0], s=25, marker='o', color=colors[0])
+                            self.y_.scatter(data_[sys_]['Epoch'], dXYZ[:, 1], s=25, marker='o', color=colors[1])
+                            self.z_.scatter(data_[sys_]['Epoch'], dXYZ[:, 2], s=25, marker='o', color=colors[2])
 
                             from quality_check import rtkcmn as com
                             dx_patch = mpatches.Patch(color='r', label='X,RMS=' + str(np.round(com.rms(dXYZ[:, 0]), 3)))
                             dy_patch = mpatches.Patch(color='b', label='Y,RMS=' + str(np.round(com.rms(dXYZ[:, 1]), 3)))
                             dz_patch = mpatches.Patch(color='green', label='Z,RMS=' + str(np.round(com.rms(dXYZ[:, 2]), 3)))
 
-                            x_.legend(handles=[dx_patch, dy_patch, dz_patch],
+                            self.x_.legend(handles=[dx_patch, dy_patch, dz_patch],
                                       bbox_to_anchor=(1, 1.2), loc='upper right', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
 
-                        x_.grid(linestyle='--')
-                        y_.grid(linestyle='--')
-                        z_.grid(linestyle='--')
+                        self.x_.grid(linestyle='--')
+                        self.y_.grid(linestyle='--')
+                        self.z_.grid(linestyle='--')
                         font = {'family': 'Times New Roman',
                                 'size': 16,
                                 'weight': 'bold',
                                 }
                         xfmt = mdate.DateFormatter('%H:%M')
-                        z_.xaxis.set_major_formatter(xfmt)
-                        y_.xaxis.set_major_formatter(xfmt)
-                        x_.xaxis.set_major_formatter(xfmt)
+                        self.z_.xaxis.set_major_formatter(xfmt)
+                        self.y_.xaxis.set_major_formatter(xfmt)
+                        self.x_.xaxis.set_major_formatter(xfmt)
 
-                        z_.set_xlabel(u"GPST (HH:MM)", font)
-                        x_.set_ylabel(u"X (m)", font)
-                        y_.set_ylabel(u"Y (m)", font)
-                        z_.set_ylabel(u"Z (m)", font)
-                        x_.set_xticklabels([])
-                        y_.set_xticklabels([])
+                        self.z_.set_xlabel(u"GPST (HH:MM)", font)
+                        self.x_.set_ylabel(u"X (m)", font)
+                        self.y_.set_ylabel(u"Y (m)", font)
+                        self.z_.set_ylabel(u"Z (m)", font)
+                        self.x_.set_xticklabels([])
+                        self.y_.set_xticklabels([])
                         self.figure.draw()
 
                     else:
@@ -1300,7 +1335,7 @@ class plot_sys(QMainWindow):
                             from quality_check import rtkcmn as com
                             data_rms[sys_] = list(com.rms(dXYZ))
 
-                        ax = fig.add_subplot(111)
+                        self.ax = fig.add_subplot(111)
                         colors = ['r', 'b', 'green', 'm', 'orange', 'k', 'deeppink']
 
                         categories = list(data_rms.keys())
@@ -1313,18 +1348,18 @@ class plot_sys(QMainWindow):
 
                         # barplot
                         for i in range(values.shape[1]):
-                            ax.bar(index + (i*bar_width), values[:, i], bar_width, color=colors[i])
+                            self.ax.bar(index + (i*bar_width), values[:, i], bar_width, color=colors[i])
 
-                        ax.set_xticks(index + ((values.shape[1] - 1)*0.5*bar_width))
-                        ax.set_xticklabels(categories)
+                        self.ax.set_xticks(index + ((values.shape[1] - 1)*0.5*bar_width))
+                        self.ax.set_xticklabels(categories)
 
                         plt.xticks(rotation=0)
                         font = {'family': 'Times New Roman',
                                 'size': 16,
                                 'weight': 'bold',
                                 }
-                        ax.set_ylabel(r"Position Error (m)", font)
-                        ax.grid(linestyle='--')
+                        self.ax.set_ylabel(r"Position Error (m)", font)
+                        self.ax.grid(linestyle='--')
                         N_patch = mpatches.Patch(color='r', label='X')
                         E_patch = mpatches.Patch(color='b', label='Y')
                         U_patch = mpatches.Patch(color='green', label='Z')
@@ -1350,9 +1385,9 @@ class plot_sys(QMainWindow):
                     fig = self.figure.fig
 
                     if sys_type != 'All':
-                        x_ = fig.add_subplot(311)
-                        y_ = fig.add_subplot(312)
-                        z_ = fig.add_subplot(313)
+                        self.x_ = fig.add_subplot(311)
+                        self.y_ = fig.add_subplot(312)
+                        self.z_ = fig.add_subplot(313)
 
                         if sys_type in row_name:
                             sys_ = sys_type
@@ -1366,36 +1401,36 @@ class plot_sys(QMainWindow):
                                 if used_flag[i] > 0:
                                     NEU[i, :] = kml.XYZ_NEH(XYZ[i], XYZ_mean)
 
-                            x_.scatter(data_[sys_]['Epoch'], NEU[:, 0], s=25,  marker='o', color=colors[0])
-                            y_.scatter(data_[sys_]['Epoch'], NEU[:, 1], s=25, marker='o', color=colors[1])
-                            z_.scatter(data_[sys_]['Epoch'], NEU[:, 2], s=25, marker='o', color=colors[2])
+                            self.x_.scatter(data_[sys_]['Epoch'], NEU[:, 0], s=25,  marker='o', color=colors[0])
+                            self.y_.scatter(data_[sys_]['Epoch'], NEU[:, 1], s=25, marker='o', color=colors[1])
+                            self.z_.scatter(data_[sys_]['Epoch'], NEU[:, 2], s=25, marker='o', color=colors[2])
 
                             from quality_check import rtkcmn as com
                             N_patch = mpatches.Patch(color='r', label='N,RMS=' + str(np.round(com.rms(NEU[:, 0]), 3)))
                             E_patch = mpatches.Patch(color='b', label='E,RMS=' + str(np.round(com.rms(NEU[:, 1]), 3)))
                             U_patch = mpatches.Patch(color='green', label='U,RMS=' + str(np.round(com.rms(NEU[:, 2]), 3)))
 
-                            x_.legend(handles=[N_patch, E_patch, U_patch],
+                            self.x_.legend(handles=[N_patch, E_patch, U_patch],
                                       bbox_to_anchor=(1, 1.2), loc='upper right', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
 
-                        x_.grid(linestyle='--')
-                        y_.grid(linestyle='--')
-                        z_.grid(linestyle='--')
+                        self.x_.grid(linestyle='--')
+                        self.y_.grid(linestyle='--')
+                        self.z_.grid(linestyle='--')
                         font = {'family': 'Times New Roman',
                                 'size': 16,
                                 'weight': 'bold',
                                 }
                         xfmt = mdate.DateFormatter('%H:%M')
-                        z_.xaxis.set_major_formatter(xfmt)
-                        y_.xaxis.set_major_formatter(xfmt)
-                        x_.xaxis.set_major_formatter(xfmt)
+                        self.z_.xaxis.set_major_formatter(xfmt)
+                        self.y_.xaxis.set_major_formatter(xfmt)
+                        self.x_.xaxis.set_major_formatter(xfmt)
 
-                        z_.set_xlabel(u"GPST (HH:MM)", font)
-                        x_.set_ylabel(u"N (m)", font)
-                        y_.set_ylabel(u"E (m)", font)
-                        z_.set_ylabel(u"U (m)", font)
-                        x_.set_xticklabels([])
-                        y_.set_xticklabels([])
+                        self.z_.set_xlabel(u"GPST (HH:MM)", font)
+                        self.x_.set_ylabel(u"N (m)", font)
+                        self.y_.set_ylabel(u"E (m)", font)
+                        self.z_.set_ylabel(u"U (m)", font)
+                        self.x_.set_xticklabels([])
+                        self.y_.set_xticklabels([])
                         self.figure.draw()
 
                     else:
@@ -1413,7 +1448,7 @@ class plot_sys(QMainWindow):
                             from quality_check import rtkcmn as com
                             data_rms[sys_] = list(com.rms(NEU))
 
-                        ax = fig.add_subplot(111)
+                        self.ax = fig.add_subplot(111)
                         colors = ['r', 'b', 'green', 'm', 'orange', 'k', 'deeppink']
 
                         categories = list(data_rms.keys())
@@ -1426,18 +1461,18 @@ class plot_sys(QMainWindow):
 
                         # barplot
                         for i in range(values.shape[1]):
-                            ax.bar(index + (i*bar_width), values[:, i], bar_width, color=colors[i])
+                            self.ax.bar(index + (i*bar_width), values[:, i], bar_width, color=colors[i])
 
-                        ax.set_xticks(index + ((values.shape[1] - 1)*0.5*bar_width))
-                        ax.set_xticklabels(categories)
+                        self.ax.set_xticks(index + ((values.shape[1] - 1)*0.5*bar_width))
+                        self.ax.set_xticklabels(categories)
 
                         plt.xticks(rotation=0)
                         font = {'family': 'Times New Roman',
                                 'size': 16,
                                 'weight': 'bold',
                                 }
-                        ax.set_ylabel(r"Position Error (m)", font)
-                        ax.grid(linestyle='--')
+                        self.ax.set_ylabel(r"Position Error (m)", font)
+                        self.ax.grid(linestyle='--')
                         N_patch = mpatches.Patch(color='r', label='N')
                         E_patch = mpatches.Patch(color='b', label='E')
                         U_patch = mpatches.Patch(color='green', label='U')
@@ -1459,7 +1494,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     sys_ = sys_type
                     if sys_ in row_name:
@@ -1480,29 +1515,29 @@ class plot_sys(QMainWindow):
                         ecdf_E = sm.distributions.ECDF(np.abs(NEU[:, 1]))
                         ecdf_U = sm.distributions.ECDF(np.abs(NEU[:, 2]))
 
-                        ax.plot(ecdf_N.x, ecdf_N.y, '-', linewidth=4, color=colors(0))
+                        self.ax.plot(ecdf_N.x, ecdf_N.y, '-', linewidth=4, color=colors(0))
                         N_percentile_95 = stats.scoreatpercentile(np.abs(NEU[:, 0]), 95)
-                        ax.axvline(x=N_percentile_95, color=colors(0), linestyle='--')
-                        ax.text(N_percentile_95, 1.01, f'95%={N_percentile_95:.2f}', color=colors(0), verticalalignment='bottom')
+                        self.ax.axvline(x=N_percentile_95, color=colors(0), linestyle='--')
+                        self.ax.text(N_percentile_95, 1.01, f'95%={N_percentile_95:.2f}', color=colors(0), verticalalignment='bottom')
 
-                        ax.plot(ecdf_E.x, ecdf_E.y, '-', linewidth=4, color=colors(1))
+                        self.ax.plot(ecdf_E.x, ecdf_E.y, '-', linewidth=4, color=colors(1))
                         E_percentile_95 = stats.scoreatpercentile(np.abs(NEU[:, 1]), 95)
-                        ax.axvline(x=E_percentile_95, color=colors(1), linestyle='--')
-                        ax.text(E_percentile_95, 1.01,f'95%={E_percentile_95:.2f}', color=colors(1), verticalalignment='bottom')
+                        self.ax.axvline(x=E_percentile_95, color=colors(1), linestyle='--')
+                        self.ax.text(E_percentile_95, 1.01,f'95%={E_percentile_95:.2f}', color=colors(1), verticalalignment='bottom')
 
-                        ax.plot(ecdf_U.x, ecdf_U.y, '-', linewidth=4, color=colors(2))
+                        self.ax.plot(ecdf_U.x, ecdf_U.y, '-', linewidth=4, color=colors(2))
                         U_percentile_95 = stats.scoreatpercentile(np.abs(NEU[:, 2]), 95)
-                        ax.axvline(x=U_percentile_95, color=colors(2), linestyle='--')
-                        ax.text(U_percentile_95, 1.01, f'95%={U_percentile_95:.2f}', color=colors(2), verticalalignment='bottom')
+                        self.ax.axvline(x=U_percentile_95, color=colors(2), linestyle='--')
+                        self.ax.text(U_percentile_95, 1.01, f'95%={U_percentile_95:.2f}', color=colors(2), verticalalignment='bottom')
 
-                    ax.grid(linestyle='--')
+                    self.ax.grid(linestyle='--')
                     font = {'family': 'Times New Roman',
                             'size': 16,
                             'weight': 'bold',
                             }
 
-                    ax.set_xlabel(u"Position Error (m)", font)
-                    ax.set_ylabel(u"Cumulative Distribution Function", font)
+                    self.ax.set_xlabel(u"Position Error (m)", font)
+                    self.ax.set_ylabel(u"Cumulative Distribution Function", font)
 
                     N_patch = mpatches.Patch(color=colors(0), label='N')
                     E_patch = mpatches.Patch(color=colors(1), label='E')
@@ -1525,7 +1560,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
 
                     sys_ = sys_type
                     if sys_ in row_name:
@@ -1539,18 +1574,18 @@ class plot_sys(QMainWindow):
                         from quality_check import rtkcmn as com
                         data_neu[sys_] = NEU
 
-                        ax.boxplot(np.abs(NEU[:, 0]), positions=[0], labels='N', sym="r+", showmeans=True, patch_artist=True, boxprops={'color': 'red', 'facecolor': 'orangered'}, whiskerprops={'color': 'red'}, capprops={'color': 'red'}, autorange='True', showfliers=False, whis=(5, 95))
-                        ax.boxplot(np.abs(NEU[:, 1]), positions=[1], labels='E', sym="g+", showmeans=True, patch_artist=True, boxprops={'color': 'green', 'facecolor': 'lime'}, whiskerprops={'color': 'green'}, capprops={'color': 'green'}, autorange='True', showfliers=False, whis=(5, 95))
-                        ax.boxplot(np.abs(NEU[:, 2]), positions=[2], labels='U', sym="b+", showmeans=True, patch_artist=True, boxprops={'color': 'blue', 'facecolor': 'aqua'}, whiskerprops={'color': 'blue'}, capprops={'color': 'blue'}, autorange='True', showfliers=False, whis=(5, 95))
+                        self.ax.boxplot(np.abs(NEU[:, 0]), positions=[0], labels='N', sym="r+", showmeans=True, patch_artist=True, boxprops={'color': 'red', 'facecolor': 'orangered'}, whiskerprops={'color': 'red'}, capprops={'color': 'red'}, autorange='True', showfliers=False, whis=(5, 95))
+                        self.ax.boxplot(np.abs(NEU[:, 1]), positions=[1], labels='E', sym="g+", showmeans=True, patch_artist=True, boxprops={'color': 'green', 'facecolor': 'lime'}, whiskerprops={'color': 'green'}, capprops={'color': 'green'}, autorange='True', showfliers=False, whis=(5, 95))
+                        self.ax.boxplot(np.abs(NEU[:, 2]), positions=[2], labels='U', sym="b+", showmeans=True, patch_artist=True, boxprops={'color': 'blue', 'facecolor': 'aqua'}, whiskerprops={'color': 'blue'}, capprops={'color': 'blue'}, autorange='True', showfliers=False, whis=(5, 95))
 
 
-                    ax.grid(linestyle='--')
+                    self.ax.grid(linestyle='--')
                     font = {'family': 'Times New Roman',
                             'size': 16,
                             'weight': 'bold',
                             }
 
-                    ax.set_ylabel(u"Position Error (m)", font)
+                    self.ax.set_ylabel(u"Position Error (m)", font)
 
                     self.figure.draw()
 
@@ -1560,7 +1595,7 @@ class plot_sys(QMainWindow):
                     import matplotlib.dates as mdate
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     data = [self.sol_data['MP']['MPM1':'MPM1'], self.sol_data['MP']['MPM2':'MPM2'], self.sol_data['MP']['MPM3':'MPM3'], self.sol_data['MP']['MPM4':'MPM4'], self.sol_data['MP']['MPM5':'MPM5'], self.sol_data['MP']['MPM6':'MPM6'], self.sol_data['MP']['MPM7':'MPM7']]
                     time = self.sol_data['ele']['Epoch']
                     prn_ = self.prn_id_
@@ -1584,7 +1619,7 @@ class plot_sys(QMainWindow):
                             z = data[band_pos[0]][sat_]
 
                             # h = ax.scatter(x, y, c=sys_colors[sys_[sat_[0]]], s=z.abs()*1000+100, alpha=0.9, vmin=-1, vmax=1, marker='.',  edgecolors='black', linewidths=0.1)
-                            h = ax.scatter(x, y, c=z, cmap='gist_rainbow', s=50, alpha=0.9, vmin=-1, vmax=1, marker='s', edgecolors='black', linewidths=0.1)
+                            h = self.ax.scatter(x, y, c=z, cmap='gist_rainbow', s=50, alpha=0.9, vmin=-1, vmax=1, marker='s', edgecolors='black', linewidths=0.1)
 
                         sm = plt.cm.ScalarMappable(cmap='gist_rainbow', norm=plt.Normalize(vmin=-1, vmax=1))
                         sm.set_array([])
@@ -1597,20 +1632,20 @@ class plot_sys(QMainWindow):
                         cbar.locator = plt.MaxNLocator(5)
                         cbar.update_ticks()
 
-                    ax.grid(linestyle='--')
-                    ax.set_xlim(x.head(1), x.tail(1))
-                    ax.set_ylim(0.5, len(prn_) + 0.5)
+                    self.ax.grid(linestyle='--')
+                    self.ax.set_xlim(x.head(1), x.tail(1))
+                    self.ax.set_ylim(0.5, len(prn_) + 0.5)
                     from matplotlib.pyplot import MultipleLocator
-                    ax.yaxis.set_minor_locator(MultipleLocator(1))
-                    ax.set_yticks(np.arange(len(prn_)) + 1)
-                    ax.set_yticklabels(prn_, fontdict=font)
+                    self.ax.yaxis.set_minor_locator(MultipleLocator(1))
+                    self.ax.set_yticks(np.arange(len(prn_)) + 1)
+                    self.ax.set_yticklabels(prn_, fontdict=font)
 
-                    ax.set_xlabel(u"GPST (HH:MM)", font)
-                    ax.set_ylabel(u"Satellite Visibility", font)
+                    self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                    self.ax.set_ylabel(u"Satellite Visibility", font)
 
-                    ax.set_xlim(time.iloc[0], time.iloc[-1])
+                    self.ax.set_xlim(time.iloc[0], time.iloc[-1])
                     xfmt = mdate.DateFormatter('%H:%M')
-                    ax.xaxis.set_major_formatter(xfmt)
+                    self.ax.xaxis.set_major_formatter(xfmt)
                     plt.subplots_adjust(right=0.9)
 
                     self.figure.draw()
@@ -1621,7 +1656,7 @@ class plot_sys(QMainWindow):
                     import matplotlib.dates as mdate
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     data = [self.sol_data['CN0']['CNRS1':'CNRS1'], self.sol_data['CN0']['CNRS2':'CNRS2'], self.sol_data['CN0']['CNRS3':'CNRS3'], self.sol_data['CN0']['CNRS4':'CNRS4'], self.sol_data['CN0']['CNRS5':'CNRS5'], self.sol_data['CN0']['CNRS6':'CNRS6'], self.sol_data['CN0']['CNRS7':'CNRS7']]
                     time = self.sol_data['ele']['Epoch']
                     prn_ = self.prn_sys[sys_type]
@@ -1649,7 +1684,7 @@ class plot_sys(QMainWindow):
                             z = data[band_pos[0]][sat_]
 
                             # h = ax.scatter(x, y, c=z, s=z.abs()*200, cmap='jet', alpha=0.75, vmin=-1, vmax=1, marker='o')
-                            h = ax.scatter(x, y, c=z, cmap='gist_rainbow', s=50, alpha=0.75, marker='s', edgecolors='black', linewidths=0.1, vmin=min_value, vmax=max_value)
+                            h = self.ax.scatter(x, y, c=z, cmap='gist_rainbow', s=50, alpha=0.75, marker='s', edgecolors='black', linewidths=0.1, vmin=min_value, vmax=max_value)
 
 
                         sm = plt.cm.ScalarMappable(cmap='gist_rainbow', norm=plt.Normalize(vmin=min_value, vmax=max_value))
@@ -1663,19 +1698,19 @@ class plot_sys(QMainWindow):
                         cbar.locator = plt.MaxNLocator(5)
                         cbar.update_ticks()
 
-                    ax.grid(linestyle='--')
-                    ax.set_ylim(0.5, len(prn_) + 0.5)
+                    self.ax.grid(linestyle='--')
+                    self.ax.set_ylim(0.5, len(prn_) + 0.5)
                     from matplotlib.pyplot import MultipleLocator
-                    ax.yaxis.set_minor_locator(MultipleLocator(1))
-                    ax.set_yticks(np.arange(len(prn_)) + 1)
-                    ax.set_yticklabels(prn_, fontdict=font)
+                    self.ax.yaxis.set_minor_locator(MultipleLocator(1))
+                    self.ax.set_yticks(np.arange(len(prn_)) + 1)
+                    self.ax.set_yticklabels(prn_, fontdict=font)
 
-                    ax.set_xlabel(u"GPST (HH:MM)", font)
-                    ax.set_ylabel(u"Satellite Visibility", font)
+                    self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                    self.ax.set_ylabel(u"Satellite Visibility", font)
 
-                    ax.set_xlim(time.iloc[0], time.iloc[-1])
+                    self.ax.set_xlim(time.iloc[0], time.iloc[-1])
                     xfmt = mdate.DateFormatter('%H:%M')
-                    ax.xaxis.set_major_formatter(xfmt)
+                    self.ax.xaxis.set_major_formatter(xfmt)
                     plt.subplots_adjust(right=0.9)
 
                     self.figure.draw()
@@ -1686,7 +1721,7 @@ class plot_sys(QMainWindow):
                     import matplotlib.dates as mdate
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     data = [self.sol_data['iod']['IODI1':'IODI1'], self.sol_data['iod']['IODI2':'IODI2'], self.sol_data['iod']['IODI3':'IODI3'], self.sol_data['iod']['IODI4':'IODI4'], self.sol_data['iod']['IODI5':'IODI5'], self.sol_data['iod']['IODI6':'IODI6'], self.sol_data['iod']['IODI7':'IODI7']]
                     time = self.sol_data['ele']['Epoch']
                     prn_ = self.prn_sys[sys_type]
@@ -1712,7 +1747,7 @@ class plot_sys(QMainWindow):
                             z = data[band_pos[0]][sat_]
 
                             # h = ax.scatter(x, y, c=z, s=z.abs()*200, cmap='jet', alpha=0.75, vmin=-1, vmax=1, marker='o')
-                            h = ax.scatter(x, y, c=z, s=50, alpha=0.75, marker='s', cmap='gist_rainbow', edgecolors='black', linewidths=0.1, vmin=min_value, vmax=max_value)
+                            h = self.ax.scatter(x, y, c=z, s=50, alpha=0.75, marker='s', cmap='gist_rainbow', edgecolors='black', linewidths=0.1, vmin=min_value, vmax=max_value)
 
                         sm = plt.cm.ScalarMappable(cmap='gist_rainbow', norm=plt.Normalize(vmin=min_value, vmax=max_value))
                         sm.set_array([])
@@ -1725,19 +1760,19 @@ class plot_sys(QMainWindow):
                         cbar.locator = plt.MaxNLocator(5)
                         cbar.update_ticks()
 
-                    ax.grid(linestyle='--')
-                    ax.set_ylim(0.5, len(prn_) + 0.5)
+                    self.ax.grid(linestyle='--')
+                    self.ax.set_ylim(0.5, len(prn_) + 0.5)
                     from matplotlib.pyplot import MultipleLocator
-                    ax.yaxis.set_minor_locator(MultipleLocator(1))
-                    ax.set_yticks(np.arange(len(prn_)) + 1)
-                    ax.set_yticklabels(prn_, fontdict=font)
+                    self.ax.yaxis.set_minor_locator(MultipleLocator(1))
+                    self.ax.set_yticks(np.arange(len(prn_)) + 1)
+                    self.ax.set_yticklabels(prn_, fontdict=font)
 
-                    ax.set_xlabel(u"GPST (HH:MM)", font)
-                    ax.set_ylabel(u"Satellite Visibility", font)
+                    self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                    self.ax.set_ylabel(u"Satellite Visibility", font)
 
-                    ax.set_xlim(time.iloc[0], time.iloc[-1])
+                    self.ax.set_xlim(time.iloc[0], time.iloc[-1])
                     xfmt = mdate.DateFormatter('%H:%M')
-                    ax.xaxis.set_major_formatter(xfmt)
+                    self.ax.xaxis.set_major_formatter(xfmt)
                     plt.subplots_adjust(right=0.9)
                     self.figure.draw()
 
@@ -1748,7 +1783,7 @@ class plot_sys(QMainWindow):
                     import matplotlib.dates as mdate
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     data = [self.sol_data['Pnoise']['PNSN1':'PNSN1'], self.sol_data['Pnoise']['PNSN2':'PNSN2'], self.sol_data['Pnoise']['PNSN3':'PNSN3'], self.sol_data['Pnoise']['PNSN4':'PNSN4'], self.sol_data['Pnoise']['PNSN5':'PNSN5'], self.sol_data['Pnoise']['PNSN6':'PNSN6'], self.sol_data['Pnoise']['PNSN7':'PNSN7']]
                     time = self.sol_data['ele']['Epoch']
                     prn_ = self.prn_sys[sys_type]
@@ -1774,7 +1809,7 @@ class plot_sys(QMainWindow):
                             z = data[band_pos[0]][sat_]
 
                             # h = ax.scatter(x, y, c=z, s=z.abs()*200, cmap='jet', alpha=0.75, vmin=-1, vmax=1, marker='o')
-                            ax.scatter(x, y, c=z, s=50, alpha=0.75, marker='s', cmap='gist_rainbow', edgecolors='black', linewidths=0.1, vmin=min_value, vmax=max_value)
+                            self.ax.scatter(x, y, c=z, s=50, alpha=0.75, marker='s', cmap='gist_rainbow', edgecolors='black', linewidths=0.1, vmin=min_value, vmax=max_value)
 
                         sm = plt.cm.ScalarMappable(cmap='gist_rainbow', norm=plt.Normalize(vmin=min_value, vmax=max_value))
                         sm.set_array([])
@@ -1787,19 +1822,19 @@ class plot_sys(QMainWindow):
                         cbar.locator = plt.MaxNLocator(5)
                         cbar.update_ticks()
 
-                    ax.grid(linestyle='--')
-                    ax.set_ylim(0.5, len(prn_) + 0.5)
+                    self.ax.grid(linestyle='--')
+                    self.ax.set_ylim(0.5, len(prn_) + 0.5)
                     from matplotlib.pyplot import MultipleLocator
-                    ax.yaxis.set_minor_locator(MultipleLocator(1))
-                    ax.set_yticks(np.arange(len(prn_)) + 1)
-                    ax.set_yticklabels(prn_, fontdict=font)
+                    self.ax.yaxis.set_minor_locator(MultipleLocator(1))
+                    self.ax.set_yticks(np.arange(len(prn_)) + 1)
+                    self.ax.set_yticklabels(prn_, fontdict=font)
 
-                    ax.set_xlabel(u"GPST (HH:MM)", font)
-                    ax.set_ylabel(u"Satellite Visibility", font)
+                    self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                    self.ax.set_ylabel(u"Satellite Visibility", font)
 
-                    ax.set_xlim(time.iloc[0], time.iloc[-1])
+                    self.ax.set_xlim(time.iloc[0], time.iloc[-1])
                     xfmt = mdate.DateFormatter('%H:%M')
-                    ax.xaxis.set_major_formatter(xfmt)
+                    self.ax.xaxis.set_major_formatter(xfmt)
                     plt.subplots_adjust(right=0.9)
 
                     self.figure.draw()
@@ -1826,7 +1861,7 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if len(prn_) > 0:
                         color_data = data[band_pos[0]][prn_]
                         min_value = np.nanmin(color_data)
@@ -1838,7 +1873,7 @@ class plot_sys(QMainWindow):
                             z = data[band_pos[0]][sat_]
 
                             # h = ax.scatter(x, y, c=z, s=z.abs()*200, cmap='jet', alpha=0.75, vmin=-1, vmax=1, marker='o')
-                            ax.scatter(x, y, c=z, s=50, alpha=0.75, marker='s', cmap='gist_rainbow', edgecolors='black', linewidths=0.1, vmin=min_value, vmax=max_value)
+                            self.ax.scatter(x, y, c=z, s=50, alpha=0.75, marker='s', cmap='gist_rainbow', edgecolors='black', linewidths=0.1, vmin=min_value, vmax=max_value)
 
                         sm = plt.cm.ScalarMappable(cmap='gist_rainbow', norm=plt.Normalize(vmin=min_value, vmax=max_value))
                         sm.set_array([])
@@ -1851,19 +1886,19 @@ class plot_sys(QMainWindow):
                         cbar.locator = plt.MaxNLocator(5)
                         cbar.update_ticks()
 
-                    ax.grid(linestyle='--')
-                    ax.set_ylim(0.5, len(prn_) + 0.5)
+                    self.ax.grid(linestyle='--')
+                    self.ax.set_ylim(0.5, len(prn_) + 0.5)
                     from matplotlib.pyplot import MultipleLocator
-                    ax.yaxis.set_minor_locator(MultipleLocator(1))
-                    ax.set_yticks(np.arange(len(prn_)) + 1)
-                    ax.set_yticklabels(prn_, fontdict=font)
+                    self.ax.yaxis.set_minor_locator(MultipleLocator(1))
+                    self.ax.set_yticks(np.arange(len(prn_)) + 1)
+                    self.ax.set_yticklabels(prn_, fontdict=font)
 
-                    ax.set_xlabel(u"GPST (HH:MM)", font)
-                    ax.set_ylabel(u"Satellite Visibility", font)
+                    self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                    self.ax.set_ylabel(u"Satellite Visibility", font)
 
-                    ax.set_xlim(time.iloc[0], time.iloc[-1])
+                    self.ax.set_xlim(time.iloc[0], time.iloc[-1])
                     xfmt = mdate.DateFormatter('%H:%M')
-                    ax.xaxis.set_major_formatter(xfmt)
+                    self.ax.xaxis.set_major_formatter(xfmt)
                     plt.subplots_adjust(right=0.9)
 
                     self.figure.draw()
@@ -1882,19 +1917,19 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    sky_ = fig.add_subplot(111, polar=True)
-                    sky_.set_theta_direction(-1)
-                    sky_.set_theta_zero_location('N')
-                    sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
-                    sky_.yaxis.set_label_position('right')
-                    sky_.grid(True)
+                    self.sky_ = fig.add_subplot(111, polar=True)
+                    self.sky_.set_theta_direction(-1)
+                    self.sky_.set_theta_zero_location('N')
+                    self.sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
+                    self.sky_.yaxis.set_label_position('right')
+                    self.sky_.grid(True)
                     prn_ = self.prn_sys[sys_type]
                     band_pos = self.search_band(sys_type, band_type)
                     if len(prn_) > 0:
                         x = np.array(azi_data[prn_]*np.pi/180)
                         y = np.array(ele_data[prn_])
                         z = np.array(data[band_pos[0]][prn_])
-                        h = sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
+                        h = self.sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
 
                         cbar = plt.colorbar(h, format='%.2f', shrink=0.92, label='Multipath')
                         cbar.set_label('Code Multipath', fontproperties=font, weight='bold')
@@ -1906,7 +1941,7 @@ class plot_sys(QMainWindow):
                         cbar.update_ticks()
 
                     plt.gca().invert_yaxis()
-                    sky_.set_ylim([90, 0])
+                    self.sky_.set_ylim([90, 0])
                     self.figure.draw()
 
                 elif fig_type == 'Skyplot C/N0':
@@ -1922,19 +1957,19 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    sky_ = fig.add_subplot(111, polar=True)
-                    sky_.set_theta_direction(-1)
-                    sky_.set_theta_zero_location('N')
-                    sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
-                    sky_.yaxis.set_label_position('right')
-                    sky_.grid(True)
+                    self.sky_ = fig.add_subplot(111, polar=True)
+                    self.sky_.set_theta_direction(-1)
+                    self.sky_.set_theta_zero_location('N')
+                    self.sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
+                    self.sky_.yaxis.set_label_position('right')
+                    self.sky_.grid(True)
                     prn_ = self.prn_sys[sys_type]
                     band_pos = self.search_band(sys_type, band_type)
                     if len(prn_) > 0:
                         x = np.array(azi_data[prn_]*np.pi/180)
                         y = np.array(ele_data[prn_])
                         z = np.array(data[band_pos[0]][prn_])
-                        h = sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
+                        h = self.sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
 
                         cbar = plt.colorbar(h, format='%.2f', shrink=0.92, label='Carrier to Noise Ratio')
                         cbar.set_label('Carrier to Noise Ratio', fontproperties=font, weight='bold')
@@ -1946,7 +1981,7 @@ class plot_sys(QMainWindow):
                         cbar.update_ticks()
 
                     plt.gca().invert_yaxis()
-                    sky_.set_ylim([90, 0])
+                    self.sky_.set_ylim([90, 0])
                     self.figure.draw()
 
                 elif fig_type == 'Skyplot IOD':
@@ -1962,19 +1997,19 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    sky_ = fig.add_subplot(111, polar=True)
-                    sky_.set_theta_direction(-1)
-                    sky_.set_theta_zero_location('N')
-                    sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
-                    sky_.yaxis.set_label_position('right')
-                    sky_.grid(True)
+                    self.sky_ = fig.add_subplot(111, polar=True)
+                    self.sky_.set_theta_direction(-1)
+                    self.sky_.set_theta_zero_location('N')
+                    self.sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
+                    self.sky_.yaxis.set_label_position('right')
+                    self.sky_.grid(True)
                     prn_ = self.prn_sys[sys_type]
                     band_pos = self.search_band(sys_type, band_type)
                     if len(prn_) > 0:
                         x = np.array(azi_data[prn_]*np.pi/180)
                         y = np.array(ele_data[prn_])
                         z = np.array(data[band_pos[0]][prn_])
-                        h = sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
+                        h = self.sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
 
                         cbar = plt.colorbar(h, format='%.2f', shrink=0.92, label='Ionospheric Delay Rate')
                         cbar.set_label('Ionospheric Delay Rate', fontproperties=font, weight='bold')
@@ -1986,7 +2021,7 @@ class plot_sys(QMainWindow):
                         cbar.update_ticks()
 
                     plt.gca().invert_yaxis()
-                    sky_.set_ylim([90, 0])
+                    self.sky_.set_ylim([90, 0])
                     self.figure.draw()
 
                 elif fig_type == 'Skyplot Code Noise':
@@ -2002,19 +2037,19 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    sky_ = fig.add_subplot(111, polar=True)
-                    sky_.set_theta_direction(-1)
-                    sky_.set_theta_zero_location('N')
-                    sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
-                    sky_.yaxis.set_label_position('right')
-                    sky_.grid(True)
+                    self.sky_ = fig.add_subplot(111, polar=True)
+                    self.sky_.set_theta_direction(-1)
+                    self.sky_.set_theta_zero_location('N')
+                    self.sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
+                    self.sky_.yaxis.set_label_position('right')
+                    self.sky_.grid(True)
                     prn_ = self.prn_sys[sys_type]
                     band_pos = self.search_band(sys_type, band_type)
                     if len(prn_) > 0:
                         x = np.array(azi_data[prn_]*np.pi/180)
                         y = np.array(ele_data[prn_])
                         z = np.array(data[band_pos[0]][prn_])
-                        h = sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
+                        h = self.sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
 
                         cbar = plt.colorbar(h, format='%.2f', shrink=0.92, label='Code Noise')
                         cbar.set_label('Code Noise', fontproperties=font, weight='bold')
@@ -2026,7 +2061,7 @@ class plot_sys(QMainWindow):
                         cbar.update_ticks()
 
                     plt.gca().invert_yaxis()
-                    sky_.set_ylim([90, 0])
+                    self.sky_.set_ylim([90, 0])
                     self.figure.draw()
 
                 elif fig_type == 'Skyplot Phase Noise':
@@ -2042,12 +2077,12 @@ class plot_sys(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    sky_ = fig.add_subplot(111, polar=True)
-                    sky_.set_theta_direction(-1)
-                    sky_.set_theta_zero_location('N')
-                    sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
-                    sky_.yaxis.set_label_position('right')
-                    sky_.grid(True)
+                    self.sky_ = fig.add_subplot(111, polar=True)
+                    self.sky_.set_theta_direction(-1)
+                    self.sky_.set_theta_zero_location('N')
+                    self.sky_.set_rticks([0, 15, 30, 45, 60, 75, 90])
+                    self.sky_.yaxis.set_label_position('right')
+                    self.sky_.grid(True)
                     prn_ = self.prn_sys[sys_type]
                     band_pos = self.search_band(sys_type, band_type)
                     if len(prn_) > 0:
@@ -2055,7 +2090,7 @@ class plot_sys(QMainWindow):
                         y = np.array(ele_data[prn_])
                         z = np.array(data[band_pos[0]][prn_])
 
-                        h = sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
+                        h = self.sky_.scatter(x, y, s=25, marker='o', c=z, cmap='gist_rainbow')
 
                         cbar = plt.colorbar(h, format='%.2f', shrink=0.92, label='Phase Noise')
                         cbar.set_label('Phase Noise', fontproperties=font, weight='bold')
@@ -2067,7 +2102,7 @@ class plot_sys(QMainWindow):
                         cbar.update_ticks()
 
                     plt.gca().invert_yaxis()
-                    sky_.set_ylim([90, 0])
+                    self.sky_.set_ylim([90, 0])
                     self.figure.draw()
 
 
@@ -2127,7 +2162,7 @@ class Canvas(FigureCanvas):
 
         self.fig = plt.figure(linewidth=1)
         self.ax = self.fig.add_subplot(111)
-        self.ax.grid(linestyle='--')
+        self.ax.grid(False, linestyle='--')
         self.axel = plt.gca()
         self.axel.spines['bottom'].set_linewidth(1)
         self.axel.spines['left'].set_linewidth(1)
@@ -2168,7 +2203,7 @@ class Map(QMainWindow):
 if __name__ == '__main__':
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     # QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-    import qdarkstyle
+    # import qdarkstyle
     app = QApplication(sys.argv)
     # app.setStyleSheet(qdarkstyle.load_stylesheet())
     # app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5', palette=LightPalette()))

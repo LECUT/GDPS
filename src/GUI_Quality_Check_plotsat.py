@@ -95,6 +95,8 @@ class plot_sat(QMainWindow):
         zlable_h   = 25*self.ratio
         button_w   = 80*self.ratio
         button_h   = 25*self.ratio
+        checkbox_w = 45*self.ratio
+        checkbox_h = 25*self.ratio
         bobox_w    = 70*self.ratio
         bobox_h    = 25*self.ratio
         LineEdit_w = 300*self.ratio
@@ -104,7 +106,7 @@ class plot_sat(QMainWindow):
         #-------------------------------------------------------
         self.bar = self.menuBar()
         self.File = self.bar.addMenu("File")
-        self.save = self.File.addAction("Save")
+        self.save = self.File.addAction("Save Figure")
         self.save.triggered.connect(self.save_figure)
         self.Map = self.bar.addMenu("Mapview")
         self.point_map = self.Map.addAction("Pos2map")
@@ -158,7 +160,7 @@ class plot_sat(QMainWindow):
 
         self.figtype_combobox = QComboBox(self)
         self.figtype_combobox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.figtype_gnss = ['Ele', 'Azi', 'Ele-Azi', 'C/N0', 'C/N0-Ele', 'Code MP', 'Code MP-Ele', 'Phase MP', 'Phase MP-Ele', 'IOD', 'IOD-Ele', 'Code Noise', 'Phase Noise', 'DIR', 'DSR']
+        self.figtype_gnss = ['Ele', 'Azi', 'Ele-Azi', 'C/N0', 'C/N0-Ele', 'Code MP', 'Code MP-Ele', 'Phase MP', 'Phase MP-Ele', 'IOD', 'IOD-Ele', 'Code Noise', 'Phase Noise', 'DIR', 'DSR', 'Cycle Slips']
         self.figtype_combobox.addItems(self.figtype_gnss)
         self.figtype_combobox.setMinimumSize(QSize(bobox_w, bobox_h))
 
@@ -213,10 +215,15 @@ class plot_sat(QMainWindow):
         self.draw_btn.setMinimumSize(QSize(button_w, button_h))
         self.draw_btn.clicked.connect(self.plot_fig)
 
+        self.grid_checkbox = QCheckBox('Grid', self)
+        self.grid_checkbox.setMinimumSize(QSize(checkbox_w, checkbox_h))
+        self.grid_checkbox.setChecked(True)
+        self.grid_checkbox.stateChanged.connect(self.choose_grid)
+
         sol_box.setSpacing(Pagemargin)
         sol_box.addWidget(self.sol_files_lable, 0, 0, 1, 1)
         sol_box.addWidget(self.sol_files_edit, 0, 1, 1, 7)
-        sol_box.addWidget(self.sol_files_btn, 0, 8, 1, 1)
+        sol_box.addWidget(self.sol_files_btn, 0, 8, 1, 2)
         sol_box.addWidget(self.figtype_label, 1, 0, 1, 1)
         sol_box.addWidget(self.figtype_combobox, 1, 1, 1, 1)
         sol_box.addWidget(self.sys_label, 1, 2, 1, 1)
@@ -226,6 +233,7 @@ class plot_sat(QMainWindow):
         sol_box.addWidget(self.sate_label, 1, 6, 1, 1)
         sol_box.addWidget(self.sate_combobox, 1, 7, 1, 1)
         sol_box.addWidget(self.draw_btn, 1, 8, 1, 1)
+        sol_box.addWidget(self.grid_checkbox, 1, 9, 1, 1)
         sol_box.setContentsMargins(Pagemargin, Pagemargin, Pagemargin, Pagemargin)
 
         # spacerItem4 = QSpacerItem(1, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
@@ -312,6 +320,18 @@ class plot_sat(QMainWindow):
                             QMessageBox.information(self, 'Tips', 'Success Save Figure')
                     else:
                         QMessageBox.information(self, 'Tips', 'Input Size Mode Error')
+
+    # --------------Grid select---------------------------------------------------------------------------------------------
+    def choose_grid(self):
+        """根据复选框的状态切换格网显示与否"""
+        if self.grid_checkbox.isChecked():
+            if hasattr(self, 'ax'):
+                self.ax.grid(True,linestyle='--')
+        else:
+            if hasattr(self, 'ax'):
+                self.ax.grid(False)
+        self.figure.draw()
+
 
     # --------------File select---------------------------------------------------------------------------------------------
 
@@ -477,12 +497,34 @@ class plot_sat(QMainWindow):
                     from plot import plot_elevation as mplot
                     import pandas as pd
                     self.figure.fig.clear()
+                    fig = self.figure.fig
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         ele_data = self.sol_data['ele']
                         prn_ = [sat_type]
                         data = ele_data[prn_]
                         time = ele_data['Epoch'].to_frame()
-                        mplot.elev_time(time, data, prn_)
+                        # mplot.elev_time(time, data, prn_)
+
+                        sat_num = data.shape[1]
+                        for i in range(sat_num):
+                            self.ax.scatter(time, data.iloc[:, i], s=25, marker='o', label=prn_[i])
+                        self.ax.grid(linestyle='--')
+                        font = {'family': 'Times New Roman',
+                                'size': font_size,
+                                'weight': 'bold',
+                                }
+                        legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        for handle in legend_ax.legendHandles:
+                            handle.set_sizes([10])
+                            handle.set_alpha(0.4)
+                        self.ax.set_ylim(0, 90)
+                        self.ax.set_xlim(time.head(1), time.tail(1))
+                        self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                        self.ax.set_ylabel(u"Elevation (°)", font)
+                        import matplotlib.dates as mdate
+                        xfmt = mdate.DateFormatter('%H:%M')
+                        self.ax.xaxis.set_major_formatter(xfmt)
                         plt.tight_layout()
                         self.figure.draw()
                     else:
@@ -491,8 +533,27 @@ class plot_sat(QMainWindow):
                         data = ele_data[prn_]
                         # time = pd.concat([ele_data['Epoch']]*data.shape[1], axis=1).to_frame() # repmat n*2
                         time = ele_data['Epoch'].to_frame()
-                        mplot.elev_time(time, data, prn_)
+                        # mplot.elev_time(time, data, prn_)
 
+                        sat_num = data.shape[1]
+                        for i in range(sat_num):
+                            self.ax.scatter(time, data.iloc[:, i], s=25, marker='o', label=prn_[i])
+                        self.ax.grid(linestyle='--')
+                        font = {'family': 'Times New Roman',
+                                'size': font_size,
+                                'weight': 'bold',
+                                }
+                        legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        for handle in legend_ax.legendHandles:
+                            handle.set_sizes([10])
+                            handle.set_alpha(0.4)
+                        self.ax.set_ylim(0, 90)
+                        self.ax.set_xlim(time.head(1), time.tail(1))
+                        self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                        self.ax.set_ylabel(u"Elevation (°)", font)
+                        import matplotlib.dates as mdate
+                        xfmt = mdate.DateFormatter('%H:%M')
+                        self.ax.xaxis.set_major_formatter(xfmt)
                         self.figure.draw()
 
                 # azimuth
@@ -500,12 +561,35 @@ class plot_sat(QMainWindow):
                     from plot import plot_azimuth as mplot
                     import pandas as pd
                     self.figure.fig.clear()
+                    fig = self.figure.fig
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         t_data = self.sol_data['azi']
                         prn_ = [sat_type]
                         data = t_data[prn_]
                         time = t_data['Epoch'].to_frame()
-                        mplot.azim(time, data, prn_)
+                        # mplot.azim(time, data, prn_)
+
+                        sat_num = data.shape[1]
+                        # colors = distinctipy.get_colors(sat_num)
+                        for i in range(sat_num):
+                            df = data.iloc[:, i].apply(lambda x: x - 180 if x > 180 else x + 180)
+                            self.ax.scatter(time, df, s=25, marker='o', label=prn_[i])
+                        self.ax.grid(linestyle='--')
+                        font = {'family': 'Times New Roman',
+                                'size': font_size,
+                                'weight': 'bold',
+                                }
+                        legend_ax = self.ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        for handle in legend_ax.legendHandles:
+                            handle.set_sizes([10])
+                            handle.set_alpha(0.4)
+                        self.ax.set_ylim([0, 360])
+                        self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                        self.ax.set_ylabel(u"Azimuth (°)", font)
+                        import matplotlib.dates as mdate
+                        xfmt = mdate.DateFormatter('%H:%M')
+                        self.ax.xaxis.set_major_formatter(xfmt)
                         self.figure.draw()
                     else:
                         t_data = self.sol_data['azi']
@@ -513,21 +597,59 @@ class plot_sat(QMainWindow):
                         data = t_data[prn_]
                         # time = pd.concat([ele_data['Epoch']]*data.shape[1], axis=1).to_frame() # repmat n*2
                         time = t_data['Epoch'].to_frame()
-                        mplot.azim(time, data, prn_)
+                        # mplot.azim(time, data, prn_)
 
+                        sat_num = data.shape[1]
+                        # colors = distinctipy.get_colors(sat_num)
+                        for i in range(sat_num):
+                            df = data.iloc[:, i].apply(lambda x: x - 180 if x > 180 else x + 180)
+                            self.ax.scatter(time, df, s=25, marker='o', label=prn_[i])
+                        self.ax.grid(linestyle='--')
+                        font = {'family': 'Times New Roman',
+                                'size': font_size,
+                                'weight': 'bold',
+                                }
+                        legend_ax = self.ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        for handle in legend_ax.legendHandles:
+                            handle.set_sizes([10])
+                            handle.set_alpha(0.4)
+                        self.ax.set_ylim([0, 360])
+                        self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                        self.ax.set_ylabel(u"Azimuth (°)", font)
+                        import matplotlib.dates as mdate
+                        xfmt = mdate.DateFormatter('%H:%M')
+                        self.ax.xaxis.set_major_formatter(xfmt)
                         self.figure.draw()
 
                 elif fig_type == 'Ele-Azi':
                     from plot import plot_elevation_azimuth as mplot
                     import pandas as pd
                     self.figure.fig.clear()
+                    fig = self.figure.fig
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         a_data = self.sol_data['azi']
                         e_data = self.sol_data['ele']
                         prn_ = [sat_type]
                         data_a = a_data[prn_]
                         data_e = e_data[prn_]
-                        mplot.azi_ele(data_a, data_e, prn_)
+                        # mplot.azi_ele(data_a, data_e, prn_)
+
+                        sat_num = data_e.shape[1]
+                        # colors = distinctipy.get_colors(sat_num)
+                        for i in range(sat_num):
+                            df = data_a.iloc[:, i].apply(lambda x: x - 180 if x > 180 else x + 180)
+                            self.ax.scatter(df, data_e.iloc[:, i], s=20, marker='.', label=prn_[i])
+                        self.ax.grid(linestyle='--')
+                        font = {'family': 'Times New Roman',
+                                'size': font_size,
+                                'weight': 'bold',
+                                }
+                        self.ax.set_xlim([0, 360])
+                        self.ax.set_ylim([0, 90])
+                        self.ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        self.ax.set_xlabel(u"Azimuth (°)", font)
+                        self.ax.set_ylabel(u"Elevation (°)", font)
                         self.figure.draw()
                     else:
                         a_data = self.sol_data['azi']
@@ -535,8 +657,22 @@ class plot_sat(QMainWindow):
                         prn_ = self.prn_id_
                         data_a = a_data[prn_]
                         data_e = e_data[prn_]
-                        mplot.azi_ele(data_a, data_e, prn_)
-
+                        # mplot.azi_ele(data_a, data_e, prn_)
+                        sat_num = data_e.shape[1]
+                        # colors = distinctipy.get_colors(sat_num)
+                        for i in range(sat_num):
+                            df = data_a.iloc[:, i].apply(lambda x: x - 180 if x > 180 else x + 180)
+                            self.ax.scatter(df, data_e.iloc[:, i], s=20, marker='.', label=prn_[i])
+                        self.ax.grid(linestyle='--')
+                        font = {'family': 'Times New Roman',
+                                'size': font_size,
+                                'weight': 'bold',
+                                }
+                        self.ax.set_xlim([0, 360])
+                        self.ax.set_ylim([0, 90])
+                        self.ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        self.ax.set_xlabel(u"Azimuth (°)", font)
+                        self.ax.set_ylabel(u"Elevation (°)", font)
                         self.figure.draw()
 
                 # CN0
@@ -548,7 +684,7 @@ class plot_sat(QMainWindow):
                     sys_band_ = sys_band[sys_type]
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         band_pos = self.search_band(sys_type, band_type)
                         band_flag = self.band_id
@@ -559,17 +695,17 @@ class plot_sat(QMainWindow):
                                 mean_ = CN0_data[band_pos_][[sat_type]].mean(axis=0)
                                 data_ = CN0_data[band_pos_][[sat_type]]
                                 if ~data_.isna().all().all():
-                                    ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+' Mean:'+str(np.round(mean_.values, 2)[0]))
-                            ax.grid(linestyle='--')
+                                    self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+' Mean:'+str(np.round(mean_.values, 2)[0]))
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                      }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"Carrier to Noise Ratio (dB-Hz)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Carrier to Noise Ratio (dB-Hz)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.8)
@@ -589,18 +725,18 @@ class plot_sat(QMainWindow):
                                     data_ = CN0_data[band_pos_][prn_]
                                     if ~data_.isna().all().all():
                                         if sys_type != 'All':
-                                            ax.scatter(time, data_, s=30, marker='o', label=sys_band_[band_pos[i]]+' Mean:'+str(np.round(mean_.values, 2)[0]))
+                                            self.ax.scatter(time, data_, s=30, marker='o', label=sys_band_[band_pos[i]]+' Mean:'+str(np.round(mean_.values, 2)[0]))
                                             ncol = 3
-                            ax.grid(linestyle='--')
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                     }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"Carrier to Noise Ratio (dB-Hz)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Carrier to Noise Ratio (dB-Hz)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.8)
@@ -615,7 +751,7 @@ class plot_sat(QMainWindow):
                     sys_band_ = sys_band[sys_type]
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         band_pos = self.search_band(sys_type, band_type)
                         band_flag = self.band_id
@@ -627,15 +763,15 @@ class plot_sat(QMainWindow):
                                 mean_ = CN0_data[band_pos_][[sat_type]].mean(axis=0)
                                 data_c = CN0_data[band_pos_][[sat_type]]
                                 if ~data_c.isna().all().all():
-                                    ax.scatter(data_e, data_c, s=25, marker='o', label=sys_band_[band_pos[i]]+' Mean:'+str(np.round(mean_.values, 2)[0]))
-                            ax.grid(linestyle='--')
+                                    self.ax.scatter(data_e, data_c, s=25, marker='o', label=sys_band_[band_pos[i]]+' Mean:'+str(np.round(mean_.values, 2)[0]))
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                     }
-                            ax.set_xlabel(u"Elevation (°)", font)
-                            ax.set_ylabel(u"Carrier to Noise Ratio (dB-Hz)", font)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.set_xlabel(u"Elevation (°)", font)
+                            self.ax.set_ylabel(u"Carrier to Noise Ratio (dB-Hz)", font)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -656,16 +792,16 @@ class plot_sat(QMainWindow):
                                     data_c = CN0_data[band_pos_][prn_]
                                     if ~data_c.isna().all().all():
                                         if sys_type != 'All':
-                                            ax.scatter(data_e, data_c, s=30, marker='o', label=sys_band_[band_pos[i]]+ ' Mean:' + str(np.round(mean_.values, 2)[0]))
+                                            self.ax.scatter(data_e, data_c, s=30, marker='o', label=sys_band_[band_pos[i]]+ ' Mean:' + str(np.round(mean_.values, 2)[0]))
                                             ncol = 3
-                            ax.grid(linestyle='--')
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                     }
-                            ax.set_xlabel(u"Elevation (°)", font)
-                            ax.set_ylabel(u"Carrier to Noise Ratio (dB-Hz)", font)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.set_xlabel(u"Elevation (°)", font)
+                            self.ax.set_ylabel(u"Carrier to Noise Ratio (dB-Hz)", font)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -681,7 +817,7 @@ class plot_sat(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         band_pos = self.search_band(sys_type, band_type)
                         band_flag = self.band_id
@@ -692,17 +828,17 @@ class plot_sat(QMainWindow):
                                 rms_ = (MP_data[band_pos_][[sat_type]]**2).mean(axis=0)**(1/2)
                                 data_ = MP_data[band_pos_][[sat_type]]
                                 if ~data_.isna().all().all():
-                                    ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 2)[0]))
-                            ax.grid(linestyle='--')
+                                    self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 2)[0]))
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                      }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"Code Multipath (m)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Code Multipath (m)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -722,18 +858,18 @@ class plot_sat(QMainWindow):
                                     data_ = MP_data[band_pos_][prn_]
                                     if ~data_.isna().all().all():
                                         if sys_type != 'All':
-                                            ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 2)[0]))
+                                            self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 2)[0]))
                                             ncol = 3
-                            ax.grid(linestyle='--')
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                     }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"Code Multipath (m)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Code Multipath (m)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -748,7 +884,7 @@ class plot_sat(QMainWindow):
                     sys_band_ = sys_band[sys_type]
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         band_pos = self.search_band(sys_type, band_type)
                         band_flag = self.band_id
@@ -760,15 +896,15 @@ class plot_sat(QMainWindow):
                                 rms_ = (MP_data[band_pos_][[sat_type]]**2).mean(axis=0)**(1/2)
                                 data_c = MP_data[band_pos_][[sat_type]]
                                 if ~data_c.isna().all().all():
-                                    ax.scatter(data_e, data_c, s=25, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 2)[0]))
-                            ax.grid(linestyle='--')
+                                    self.ax.scatter(data_e, data_c, s=25, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 2)[0]))
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                     }
-                            ax.set_xlabel(u"Elevation (°)", font)
-                            ax.set_ylabel(u"Code Multipath (m)", font)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.set_xlabel(u"Elevation (°)", font)
+                            self.ax.set_ylabel(u"Code Multipath (m)", font)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -788,16 +924,16 @@ class plot_sat(QMainWindow):
                                     data_c = MP_data[band_pos_][prn_]
                                     if ~data_c.isna().all().all():
                                         if sys_type != 'All':
-                                            ax.scatter(data_e, data_c, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 2)[0]))
+                                            self.ax.scatter(data_e, data_c, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 2)[0]))
                                             ncol = 3
-                            ax.grid(linestyle='--')
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                     }
-                            ax.set_xlabel(u"Elevation (°)", font)
-                            ax.set_ylabel(u"Code Multipath (m)", font)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.set_xlabel(u"Elevation (°)", font)
+                            self.ax.set_ylabel(u"Code Multipath (m)", font)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -811,23 +947,23 @@ class plot_sat(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         GFIF_data = self.sol_data['GFIF']
                         time = GFIF_data['Epoch']
                         data_ = GFIF_data[[sat_type]]
                         if ~data_.isna().all().all():
-                            ax.scatter(time, data_*100, s=25, marker='o', label=sat_type)
-                        ax.grid(linestyle='--')
+                            self.ax.scatter(time, data_*100, s=25, marker='o', label=sat_type)
+                        self.ax.grid(linestyle='--')
                         font = {'family': 'Times New Roman',
                                 'size': font_size,
                                 'weight': 'bold',
                                  }
-                        ax.set_xlabel(u"GPST (HH:MM)", font)
-                        ax.set_ylabel(u"Phase Multipath (cm)", font)
+                        self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                        self.ax.set_ylabel(u"Phase Multipath (cm)", font)
                         xfmt = mdate.DateFormatter('%H:%M')
-                        ax.xaxis.set_major_formatter(xfmt)
-                        legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        self.ax.xaxis.set_major_formatter(xfmt)
+                        legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                         for handle in legend_ax.legendHandles:
                             handle.set_sizes([10])
                             handle.set_alpha(0.4)
@@ -839,17 +975,17 @@ class plot_sat(QMainWindow):
                         time = GFIF_data['Epoch']
                         if len(prn_)>0:
                             for prn in prn_:
-                                ax.scatter(time,  GFIF_data[prn]*100, s=25, marker='o', label=prn)
-                        ax.grid(linestyle='--')
+                                self.ax.scatter(time,  GFIF_data[prn]*100, s=25, marker='o', label=prn)
+                        self.ax.grid(linestyle='--')
                         font = {'family': 'Times New Roman',
                                 'size': font_size,
                                 'weight': 'bold',
                                  }
-                        ax.set_xlabel(u"GPST (HH:MM)", font)
-                        ax.set_ylabel(u"Phase Multipath (cm)", font)
+                        self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                        self.ax.set_ylabel(u"Phase Multipath (cm)", font)
                         xfmt = mdate.DateFormatter('%H:%M')
-                        ax.xaxis.set_major_formatter(xfmt)
-                        legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        self.ax.xaxis.set_major_formatter(xfmt)
+                        legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                         for handle in legend_ax.legendHandles:
                             handle.set_sizes([10])
                             handle.set_alpha(0.4)
@@ -863,19 +999,19 @@ class plot_sat(QMainWindow):
                     import matplotlib.dates as mdate
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         ele_data = self.sol_data['ele']
                         GFIF_data = self.sol_data['GFIF']
-                        ax.scatter(ele_data[[sat_type]], GFIF_data[[sat_type]]*100, s=25, marker='o', label=sat_type)
-                        ax.grid(linestyle='--')
+                        self.ax.scatter(ele_data[[sat_type]], GFIF_data[[sat_type]]*100, s=25, marker='o', label=sat_type)
+                        self.ax.grid(linestyle='--')
                         font = {'family': 'Times New Roman',
                                 'size': font_size,
                                 'weight': 'bold',
                                 }
-                        ax.set_xlabel(u"Elevation (°)", font)
-                        ax.set_ylabel(u"Phase Multipath (cm)", font)
-                        legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        self.ax.set_xlabel(u"Elevation (°)", font)
+                        self.ax.set_ylabel(u"Phase Multipath (cm)", font)
+                        legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                         for handle in legend_ax.legendHandles:
                             handle.set_sizes([10])
                             handle.set_alpha(0.4)
@@ -887,15 +1023,15 @@ class plot_sat(QMainWindow):
                         prn_ = self.prn_id_
                         if len(prn_) > 0:
                             for sat_ in prn_:
-                                ax.scatter(ele_data[[sat_]], GFIF_data[[sat_]]*100, s=25, marker='o', label=sat_)
-                        ax.grid(linestyle='--')
+                                self.ax.scatter(ele_data[[sat_]], GFIF_data[[sat_]]*100, s=25, marker='o', label=sat_)
+                        self.ax.grid(linestyle='--')
                         font = {'family': 'Times New Roman',
                                 'size': font_size,
                                 'weight': 'bold',
                                 }
-                        ax.set_xlabel(u"Elevation (°)", font)
-                        ax.set_ylabel(u"Phase Multipath (cm)", font)
-                        legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        self.ax.set_xlabel(u"Elevation (°)", font)
+                        self.ax.set_ylabel(u"Phase Multipath (cm)", font)
+                        legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=12, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                         for handle in legend_ax.legendHandles:
                             handle.set_sizes([10])
                             handle.set_alpha(0.4)
@@ -910,7 +1046,7 @@ class plot_sat(QMainWindow):
                     sys_band_ = sys_band[sys_type]
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         band_pos = self.search_band(sys_type, band_type)
                         band_flag = self.band_id
@@ -921,17 +1057,17 @@ class plot_sat(QMainWindow):
                                 rms_ = (iod_data[band_pos_][[sat_type]]**2).mean(axis=0)**(1/2)
                                 data_ = iod_data[band_pos_][[sat_type]]
                                 if ~data_.isna().all().all():
-                                    ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]] + ' Mean:' + str(np.round(rms_.values, 4)[0]))
-                            ax.grid(linestyle='--')
+                                    self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]] + ' Mean:' + str(np.round(rms_.values, 4)[0]))
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                      }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"ionospheric delay rate (m/s)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"ionospheric delay rate (m/s)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -951,18 +1087,18 @@ class plot_sat(QMainWindow):
                                     data_ = iod_data[band_pos_][prn_]
                                     if ~data_.isna().all().all():
                                         if sys_type != 'All':
-                                            ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 4)[0]))
+                                            self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 4)[0]))
                                             ncol = 3
-                            ax.grid(linestyle='--')
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                      }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"Ionospheric Delay Rate (m/s)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Ionospheric Delay Rate (m/s)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -977,7 +1113,7 @@ class plot_sat(QMainWindow):
                     sys_band_ = sys_band[sys_type]
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         band_pos = self.search_band(sys_type, band_type)
                         band_flag = self.band_id
@@ -989,15 +1125,15 @@ class plot_sat(QMainWindow):
                                 rms_ = (iod_data[band_pos_][[sat_type]]**2).mean(axis=0)**(1/2)
                                 data_i = iod_data[band_pos_][[sat_type]]
                                 if ~data_i.isna().all().all():
-                                    ax.scatter(data_e, data_i, s=25, marker='o', label=sys_band_[band_pos[i]]+' RMS:'+str(np.round(rms_.values, 4)[0]))
-                            ax.grid(linestyle='--')
+                                    self.ax.scatter(data_e, data_i, s=25, marker='o', label=sys_band_[band_pos[i]]+' RMS:'+str(np.round(rms_.values, 4)[0]))
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                     }
-                            ax.set_xlabel(u"Elevation (°)", font)
-                            ax.set_ylabel(u"Ionospheric Delay Rate (m/s)", font)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.set_xlabel(u"Elevation (°)", font)
+                            self.ax.set_ylabel(u"Ionospheric Delay Rate (m/s)", font)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -1019,16 +1155,16 @@ class plot_sat(QMainWindow):
                                     data_i = iod_data [band_pos_][prn_]
                                     if ~data_i.isna().all().all():
                                         if sys_type != 'All':
-                                            ax.scatter(data_e, data_i, s=30, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 4)[0]))
+                                            self.ax.scatter(data_e, data_i, s=30, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 4)[0]))
                                             ncol = 3
-                            ax.grid(linestyle='--')
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                     }
-                            ax.set_xlabel(u"Elevation (°)", font)
-                            ax.set_ylabel(u"Ionospheric Delay Rate (m/s)", font)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.set_xlabel(u"Elevation (°)", font)
+                            self.ax.set_ylabel(u"Ionospheric Delay Rate (m/s)", font)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -1050,7 +1186,7 @@ class plot_sat(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     prn_ = self.prn_sys[sys_type]
                     inte_data = self.sol_data['inte']
 
@@ -1061,21 +1197,21 @@ class plot_sat(QMainWindow):
                         x = x0 - (total_width - width)/2
                         if sys_type != 'BDS':
                             for i in range(n):
-                                ax.bar(x + width*i, np.array(inte_data[prn_].iloc[i, :]).T.astype(np.float64), width=width, color=color_sys[sys_type][i], label=band_sys[sys_type][i])
+                                self.ax.bar(x + width*i, np.array(inte_data[prn_].iloc[i, :]).T.astype(np.float64), width=width, color=color_sys[sys_type][i], label=band_sys[sys_type][i])
                         else:
                             bdsband_pos = [0, 1, 3, 5, 2, 6, 4]
                             for i in range(n):
-                                ax.bar(x + width*i, np.array(inte_data[prn_].iloc[bdsband_pos[i], :]).T.astype(np.float64), width=width, color=color_sys[sys_type][i], label=band_sys[sys_type][i])
-                        ax.set_xticks(x0)
-                        ax.set_xticklabels(prn_)
+                                self.ax.bar(x + width*i, np.array(inte_data[prn_].iloc[bdsband_pos[i], :]).T.astype(np.float64), width=width, color=color_sys[sys_type][i], label=band_sys[sys_type][i])
+                        self.ax.set_xticks(x0)
+                        self.ax.set_xticklabels(prn_)
                         plt.xticks(rotation=90)
                         font = {'family': 'Times New Roman',
                                 'size': font_size,
                                 'weight': 'bold',
                                  }
-                        ax.set_ylabel(r"Data Integrity Rate (%)", font)
-                        ax.grid(linestyle='--')
-                        legend_ax = ax.legend(loc='upper right', bbox_to_anchor=(1, 1.1), ncol=n, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        self.ax.set_ylabel(r"Data Integrity Rate (%)", font)
+                        self.ax.grid(linestyle='--')
+                        legend_ax = self.ax.legend(loc='upper right', bbox_to_anchor=(1, 1.1), ncol=n, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                         for handle in legend_ax.legendHandles:
                             handle.set_alpha(0.8)
 
@@ -1096,7 +1232,7 @@ class plot_sat(QMainWindow):
 
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     prn_ = self.prn_sys[sys_type]
                     full_data = self.sol_data['satu']
 
@@ -1109,21 +1245,21 @@ class plot_sat(QMainWindow):
                             for i in range(n):
 
                                 aa = np.array(full_data[prn_].iloc[i, :]).T.astype(np.float64)
-                                ax.bar(x + width*i, np.array(full_data[prn_].iloc[i, :]).T.astype(np.float64), width=width, color=color_sys[sys_type][i], label=band_sys[sys_type][i])
+                                self.ax.bar(x + width*i, np.array(full_data[prn_].iloc[i, :]).T.astype(np.float64), width=width, color=color_sys[sys_type][i], label=band_sys[sys_type][i])
                         else:
                             bdsband_pos = [0, 1, 3, 5, 2, 6, 4]
                             for i in range(n):
-                                ax.bar(x + width*i, np.array(full_data[prn_].iloc[bdsband_pos[i], :]).T.astype(np.float64), width=width, color=color_sys[sys_type][i], label=band_sys[sys_type][i])
-                        ax.set_xticks(x0)
-                        ax.set_xticklabels(prn_)
+                                self.ax.bar(x + width*i, np.array(full_data[prn_].iloc[bdsband_pos[i], :]).T.astype(np.float64), width=width, color=color_sys[sys_type][i], label=band_sys[sys_type][i])
+                        self.ax.set_xticks(x0)
+                        self.ax.set_xticklabels(prn_)
                         plt.xticks(rotation=90)
                         font = {'family': 'Times New Roman',
                                 'size': font_size,
                                 'weight': 'bold',
                                 }
-                        ax.set_ylabel(r"Data Saturation Rate (%)", font)
-                        ax.grid(linestyle='--')
-                        legend_ax = ax.legend(loc='upper right', bbox_to_anchor=(1, 1.1), ncol=n, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                        self.ax.set_ylabel(r"Data Saturation Rate (%)", font)
+                        self.ax.grid(linestyle='--')
+                        legend_ax = self.ax.legend(loc='upper right', bbox_to_anchor=(1, 1.1), ncol=n, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                         for handle in legend_ax.legendHandles:
                             handle.set_alpha(0.8)
 
@@ -1138,7 +1274,7 @@ class plot_sat(QMainWindow):
                     sys_band_ = sys_band[sys_type]
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         band_pos = self.search_band(sys_type, band_type)
                         band_flag = self.band_id
@@ -1149,17 +1285,17 @@ class plot_sat(QMainWindow):
                                 rms_ = (pnoise_data[band_pos_][[sat_type]]**2).mean(axis=0)**(1/2)
                                 data_ = pnoise_data[band_pos_][[sat_type]]
                                 if ~data_.isna().all().all():
-                                    ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 4)[0]))
-                            ax.grid(linestyle='--')
+                                    self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 4)[0]))
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                      }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"Code Noise (m)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Code Noise (m)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -1179,18 +1315,18 @@ class plot_sat(QMainWindow):
                                     data_ = pnoise_data[band_pos_][prn_]
                                     if ~data_.isna().all().all():
                                         if sys_type != 'All':
-                                            ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 4)[0]))
+                                            self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 4)[0]))
                                             ncol = 3
-                            ax.grid(linestyle='--')
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                      }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"Code Noise (m)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Code Noise (m)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -1205,7 +1341,7 @@ class plot_sat(QMainWindow):
                     sys_band_ = sys_band[sys_type]
                     self.figure.fig.clear()
                     fig = self.figure.fig
-                    ax = fig.add_subplot(111)
+                    self.ax = fig.add_subplot(111)
                     if sat_type != 'All':
                         band_pos = self.search_band(sys_type, band_type)
                         band_flag = self.band_id
@@ -1216,17 +1352,17 @@ class plot_sat(QMainWindow):
                                 rms_ = (cnoise_data[band_pos_][[sat_type]]**2).mean(axis=0)**(1/2)
                                 data_ = cnoise_data[band_pos_][[sat_type]]
                                 if ~data_.isna().all().all():
-                                    ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 4)[0]))
-                            ax.grid(linestyle='--')
+                                    self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]]+ ' RMS:' + str(np.round(rms_.values, 4)[0]))
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                      }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"Phase Noise (Cycle)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Phase Noise (Cycle)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
@@ -1246,21 +1382,90 @@ class plot_sat(QMainWindow):
                                     data_ = cnoise_data[band_pos_][prn_]
                                     if ~data_.isna().all().all():
                                         if sys_type != 'All':
-                                            ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 4)[0]))
+                                            self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]] + ' RMS:' + str(np.round(rms_.values, 4)[0]))
                                             ncol = 3
-                            ax.grid(linestyle='--')
+                            self.ax.grid(linestyle='--')
                             font = {'family': 'Times New Roman',
                                     'size': font_size,
                                     'weight': 'bold',
                                      }
-                            ax.set_xlabel(u"GPST (HH:MM)", font)
-                            ax.set_ylabel(u"Phase Noise (Cycle)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Phase Noise (Cycle)", font)
                             xfmt = mdate.DateFormatter('%H:%M')
-                            ax.xaxis.set_major_formatter(xfmt)
-                            legend_ax = ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
                             for handle in legend_ax.legendHandles:
                                 handle.set_sizes([10])
                                 handle.set_alpha(0.4)
+
+                            self.figure.draw()
+
+                elif fig_type == 'Cycle Slips':
+                    import pandas as pd
+                    import matplotlib.dates as mdate
+
+                    sys_band = dict(zip(['GPS', 'GLO', 'BDS', 'GAL', 'QZS', 'SBS', 'NavIC'],[['L1', 'L2', 'L5'], ['G1', 'G2', 'G3'],['B1I', 'B2I', 'B2a', 'B3I', 'B2ab', 'B1c', 'B2b'],  ['E1', 'E5a', 'E5b', 'E6', 'E5'], ['L1', 'L2', 'L5', 'L6'], ['L1', 'L5'], ['L5', 'S', 'L1']]))
+                    sys_band_ = sys_band[sys_type]
+                    self.figure.fig.clear()
+                    fig = self.figure.fig
+                    self.ax = fig.add_subplot(111)
+                    if sat_type != 'All':
+                        band_pos = self.search_band(sys_type, band_type)
+                        band_flag = self.band_id
+                        if band_pos != None:
+                            cycle_data = [self.sol_data['cycle']['CYCLE1':'CYCLE1'], self.sol_data['cycle']['CYCLE2':'CYCLE2'], self.sol_data['cycle']['CYCLE3':'CYCLE3'], self.sol_data['cycle']['CYCLE4':'CYCLE4'], self.sol_data['cycle']['CYCLE5':'CYCLE5'], self.sol_data['cycle']['CYCLE6':'CYCLE6'], self.sol_data['cycle']['CYCLE7':'CYCLE7']]
+                            for i, band_pos_ in enumerate(band_pos):
+                                time = cycle_data[band_pos_]['Epoch']
+                                mean_ = cycle_data[band_pos_][[sat_type]].mean(axis=0)
+                                data_ = cycle_data[band_pos_][[sat_type]]
+                                if ~data_.isna().all().all():
+                                    self.ax.scatter(time, data_, s=25, marker='o', label=sys_band_[band_pos[i]])
+                            self.ax.grid(linestyle='--')
+                            font = {'family': 'Times New Roman',
+                                    'size': font_size,
+                                    'weight': 'bold',
+                                     }
+                            self.ax.set_title(u"(0:Normal 1:Slip)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Cycle Slip Indicator", font)
+                            self.ax.set_ylim([-0.5, 1.5])
+                            xfmt = mdate.DateFormatter('%H:%M')
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=3, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            for handle in legend_ax.legendHandles:
+                                handle.set_sizes([10])
+                                handle.set_alpha(0.8)
+                            self.figure.draw()
+                    else:
+                        band_pos = self.search_band(sys_type, band_type)
+                        band_flag = self.band_id
+                        if band_pos != None:
+                            cycle_data = [self.sol_data['cycle']['CYCLE1':'CYCLE1'], self.sol_data['cycle']['CYCLE2':'CYCLE2'], self.sol_data['cycle']['CYCLE3':'CYCLE3'], self.sol_data['cycle']['CYCLE4':'CYCLE4'], self.sol_data['cycle']['CYCLE5':'CYCLE5'], self.sol_data['cycle']['CYCLE6':'CYCLE6'], self.sol_data['cycle']['CYCLE7':'CYCLE7']]
+                            prn_ = self.prn_id_
+                            ncol = 1
+                            for i, band_pos_ in enumerate(band_pos):
+                                if len(prn_)>0:
+                                    time = pd.concat([cycle_data[band_pos_]['Epoch']]*len(prn_), axis=1)
+                                    data_ = cycle_data[band_pos_][prn_]
+                                    if ~data_.isna().all().all():
+                                        if sys_type != 'All':
+                                            self.ax.scatter(time, data_, s=30, marker='o', label=sys_band_[band_pos[i]])
+                                            ncol = 3
+                            self.ax.grid(linestyle='--')
+                            font = {'family': 'Times New Roman',
+                                    'size': font_size,
+                                    'weight': 'bold',
+                                    }
+                            self.ax.set_title(u"(0:Normal 1:Slip)", font)
+                            self.ax.set_xlabel(u"GPST (HH:MM)", font)
+                            self.ax.set_ylabel(u"Cycle Slip Indicator", font)
+                            self.ax.set_ylim([-0.5,1.5])
+                            xfmt = mdate.DateFormatter('%H:%M')
+                            self.ax.xaxis.set_major_formatter(xfmt)
+                            legend_ax = self.ax.legend(bbox_to_anchor=((0.01, 0.01)), loc='lower left', ncol=ncol, borderaxespad=0, labelspacing=0, handlelength=1, handleheight=1, handletextpad=0.01, columnspacing=0.01)
+                            for handle in legend_ax.legendHandles:
+                                handle.set_sizes([10])
+                                handle.set_alpha(0.8)
 
                             self.figure.draw()
 
@@ -1424,7 +1629,7 @@ class Map(QMainWindow):
 if __name__ == '__main__':
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     # QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-    import qdarkstyle
+    # import qdarkstyle
 
 
     app = QApplication(sys.argv)
